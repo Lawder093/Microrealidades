@@ -26,7 +26,12 @@ export default function Home() {
         <p className="section-label">[ 00 ] &nbsp; Punto de partida</p>
         <div>
           <h2 id="que-es">Las realidades que habitamos <strong>no son neutrales.</strong></h2>
-          <p>Están hechas de relaciones, territorios, tecnologías, afectos y formas de comprender el mundo. Microrealidades investiga esos espacios y diseña maneras de intervenirlos.</p>
+          <div className="manifesto-copy">
+            <p>En un mundo donde la forma aparentemente más sencilla de vivir es hacerlo en “piloto automático”, los espacios y contenidos para conectar con uno mismo son los mejores regalos que nos podemos dar.</p>
+            <p>Microrealidades representa una ventana mediante la cual podemos admirar y curiosear sobre las experiencias, emociones, pensamientos, personas y realidades que aún nos faltan por descubrir.</p>
+            <p>A través de una ventana también podemos contemplar el interior que se resguarda en cada unidad, si así lo decidimos. Recordemos que, el autoconocimiento comienza cuando elegimos mirar hacia dentro.</p>
+          </div>
+          <p className="manifesto-support">Están hechas de relaciones, territorios, tecnologías, afectos y formas de comprender el mundo. Microrealidades investiga esos espacios y diseña maneras de intervenirlos.</p>
           <ol className="process" aria-label="Nuestro proceso"><li>Observar</li><li>Nombrar</li><li>Comprender</li><li>Diseñar</li><li>Transformar</li></ol>
         </div>
       </section>
