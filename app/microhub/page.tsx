@@ -1,3 +1,4 @@
+import { PatientWorkspace } from "@/components/patient-workspace";
 import { MicrohubJournal } from "@/components/microhub-journal";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -16,11 +17,18 @@ export default function MicrohubPage() {
         <h1 id="microhub-title">Bienvenidas al<br /><em>Microhub.</em></h1>
         <p>Un punto de encuentro para explorar lo que estamos pensando, haciendo y compartiendo desde Microrealidades.</p>
       </section>
-      <section className="hub-section" aria-label="Bitácora del Microhub">
+      <section className="hub-section" aria-labelledby="patient-section-title">
         <div className="hub-section-heading">
-          <p className="section-label">Una casa en construcción</p>
-          <h2>Un lugar para volver a lo que <em>viviste.</em></h2>
-          <p>Registra una experiencia, una pregunta o algo que quieras seguir mirando. No tienes que resolverlo todo en una sola entrada.</p>
+          <p className="section-label">Primera arquitectura</p>
+          <h2 id="patient-section-title">Un expediente que <em>acompaña.</em></h2>
+          <p>Una vista sencilla para ordenar la historia, el presente y los próximos pasos de cada persona. Esta primera versión usa únicamente datos simulados.</p>
+        </div>
+        <PatientWorkspace />
+        <div className="hub-journal-divider" aria-hidden="true" />
+        <div className="hub-section-heading hub-journal-heading">
+          <p className="section-label">Espacio personal</p>
+          <h2>Volver a lo que <em>viviste.</em></h2>
+          <p>Esta bitácora permanece separada del expediente: es una herramienta local de autoobservación y no un registro clínico.</p>
         </div>
         <MicrohubJournal />
       </section>

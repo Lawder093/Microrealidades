@@ -102,6 +102,134 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
    .access-panel h1{margin:58px 0 32px;font-size:clamp(58px,17vw,92px)}
    .access-panel>p:not(.section-label){font-size:16px;margin-bottom:30px}
  }
+ .hub-journal-divider{margin:120px 0;border-top:1px solid #10111440}
+ .hub-journal-heading{margin-bottom:55px}
+ .patient-module{max-width:1400px}
+ .patient-safety-banner{display:flex;align-items:flex-start;gap:14px;padding:17px 20px;margin-bottom:18px;border:1px solid #dd316d70;background:#f8dbe4}
+ .patient-safety-mark{flex:0 0 25px;width:25px;height:25px;border:1px solid var(--pink);border-radius:50%;display:grid;place-items:center;color:var(--pink);font:bold 14px Georgia,serif}
+ .patient-safety-banner strong{display:block;font-size:13px}
+ .patient-safety-banner p{max-width:800px;margin:5px 0 0;font-size:13px;line-height:1.45}
+ .patient-demo-badge{margin-left:auto;padding:6px 9px;border:1px solid var(--pink);color:var(--pink);font:10px monospace;letter-spacing:.08em}
+ .patient-workspace{display:grid;grid-template-columns:245px minmax(0,1fr);min-height:720px;border:1px solid #10111440;background:#e4e1d8}
+ .patient-sidebar{display:flex;flex-direction:column;padding:24px 18px;background:var(--ink);color:var(--white)}
+ .patient-selector{display:flex;align-items:center;gap:11px;min-width:0}
+ .patient-avatar{flex:0 0 39px;width:39px;height:39px;display:grid;place-items:center;background:var(--pink);color:var(--white);font:bold 12px monospace;letter-spacing:.05em}
+ .patient-selector div{display:flex;flex-direction:column;min-width:0}
+ .patient-selector strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+ .patient-selector div span{margin-top:4px;color:#ffffff70;font:10px monospace}
+ .patient-chevron{margin-left:auto;color:var(--yellow);font-size:22px}
+ .patient-sidebar-rule{margin:28px 0 25px;border-top:1px solid #ffffff28}
+ .patient-sidebar>.section-label{color:#ffffff65}
+ .patient-tabs{display:flex;flex-direction:column;gap:4px;margin-top:15px}
+ .patient-tab{display:flex;align-items:center;gap:10px;padding:12px 10px;border:1px solid transparent;background:transparent;color:#ffffff9c;text-align:left;font:12px Arial,Helvetica,sans-serif;cursor:pointer;transition:.2s}
+ .patient-tab>span{width:23px;color:#ffffff50;font:10px monospace}
+ .patient-tab:hover{color:var(--white);border-color:#ffffff30}
+ .patient-tab.active{background:#ffffff12;color:var(--white);border-color:#ffffff40}
+ .patient-tab.active>span{color:var(--yellow)}
+ .patient-sidebar-footer{display:flex;gap:10px;align-items:flex-start;margin-top:auto;padding-top:22px;border-top:1px solid #ffffff28}
+ .patient-status-dot{flex:0 0 8px;width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--yellow)}
+ .patient-sidebar-footer strong{font-size:11px}
+ .patient-sidebar-footer p{margin:6px 0 0;color:#ffffff65;font-size:11px;line-height:1.45}
+ .patient-main{min-width:0;padding:44px 4.5vw 60px;color:var(--ink)}
+ .patient-main-header{display:flex;align-items:flex-end;justify-content:space-between;gap:30px;padding-bottom:35px;border-bottom:1px solid #10111440}
+ .patient-main-header .section-label{color:#10111480}
+ .patient-main-header h2{margin:20px 0 15px;font-size:clamp(45px,5.5vw,82px);line-height:.84;letter-spacing:-.06em}
+ .patient-main-header h2 em{color:var(--pink)}
+ .patient-subtitle{max-width:520px;margin:0;color:#101114b5;font-size:15px;line-height:1.5}
+ .patient-primary-action{flex:0 0 auto;padding:12px 0;border:0;border-bottom:1px solid var(--pink);background:transparent;color:var(--ink);font:11px monospace;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}
+ .patient-primary-action span{margin-left:24px;color:var(--pink);font-size:17px}
+ .patient-view{padding-top:30px}
+ .patient-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:30px;background:#10111440}
+ .patient-metrics>div{min-height:120px;padding:16px;background:#ece9e0}
+ .patient-metrics span,.patient-metrics small{display:block;color:#10111480;font:10px monospace;text-transform:uppercase;letter-spacing:.07em}
+ .patient-metrics strong{display:block;margin:21px 0 7px;font-size:25px;letter-spacing:-.04em}
+ .patient-metrics small{text-transform:none;letter-spacing:0;font-family:Arial,Helvetica,sans-serif;font-size:11px}
+ .patient-summary-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:1px;background:#10111440}
+ .patient-panel{min-width:0;padding:25px;background:#ece9e0}
+ .patient-panel>.section-label{color:#10111475}
+ .patient-panel h3{margin:20px 0 29px;font-size:clamp(27px,3vw,43px);line-height:.93;letter-spacing:-.05em}
+ .patient-activity-list{border-top:1px solid #10111440}
+ .patient-activity{display:grid;grid-template-columns:12px 1fr 20px;gap:14px;width:100%;padding:18px 0;border:0;border-bottom:1px solid #10111440;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+ .patient-activity-mark{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--pink)}
+ .patient-activity-mark.blue{background:var(--blue)}
+ .patient-activity-mark.yellow{background:var(--yellow)}
+ .patient-activity span:nth-child(2){display:flex;flex-direction:column;gap:5px}
+ .patient-activity small{font:10px monospace;color:#10111470;letter-spacing:.07em}
+ .patient-activity strong{font-size:15px}
+ .patient-activity em{font-style:normal;color:#10111490;font-size:12px}
+ .patient-activity-arrow{align-self:center;color:var(--pink);font-size:18px}
+ .patient-activity:hover strong{color:var(--pink)}
+ .patient-text-action{margin-top:25px;padding:0;border:0;background:transparent;color:var(--ink);font:11px monospace;text-transform:uppercase;letter-spacing:.07em;cursor:pointer}
+ .patient-text-action span{margin-left:16px;color:var(--pink);font-size:16px}
+ .patient-field-stack{border-top:1px solid #10111440}
+ .patient-field{display:flex;flex-direction:column;gap:6px;padding:15px 0;border-bottom:1px solid #10111440}
+ .patient-field>span{color:#10111470;font:10px monospace;text-transform:uppercase;letter-spacing:.06em}
+ .patient-field strong{font-size:15px}
+ .patient-field small{color:#10111485;font-size:11px;line-height:1.35}
+ .patient-detail-panel{padding:32px}
+ .patient-panel-intro{max-width:660px;margin:-8px 0 30px;color:#101114b5;font-size:16px;line-height:1.55}
+ .patient-fields-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px;border-top:1px solid #10111440}
+ .patient-note-box{margin-top:28px;padding:17px 18px;border-left:2px solid var(--blue);background:#dfe8eb}
+ .patient-note-box strong{font-size:12px}
+ .patient-note-box p{max-width:650px;margin:7px 0 0;font-size:13px;line-height:1.5}
+ .patient-session-list{border-top:1px solid #10111440}
+ .patient-session-list article{display:grid;grid-template-columns:1fr auto;gap:8px 25px;padding:21px 0;border-bottom:1px solid #10111440}
+ .patient-session-list article>div{min-width:0}
+ .patient-session-list small,.patient-goal-list>article>span{font:10px monospace;color:#10111470;letter-spacing:.07em}
+ .patient-session-list h4,.patient-goal-list h4{margin:9px 0 0;font-size:21px;letter-spacing:-.03em}
+ .patient-session-list p{grid-column:1/-1;max-width:600px;margin:5px 0 0;color:#101114a5;font-size:13px;line-height:1.5}
+ .patient-tag{align-self:start;padding:6px 8px;border:1px solid currentColor;font:10px monospace;text-transform:uppercase;letter-spacing:.06em}
+ .patient-tag.pink{color:var(--pink)}
+ .patient-tag.blue{color:var(--blue)}
+ .patient-tag.yellow{color:#a26f00}
+ .patient-goal-list{border-top:1px solid #10111440}
+ .patient-goal-list>article{display:grid;grid-template-columns:35px 1fr auto;gap:16px;padding:22px 0;border-bottom:1px solid #10111440}
+ .patient-goal-list>article>span{padding-top:4px;color:var(--pink)}
+ .patient-goal-list h4{margin:0}
+ .patient-goal-list p{margin:7px 0 0;color:#101114a5;font-size:13px;line-height:1.5}
+ .patient-goal-list>article>small{align-self:start;color:#10111480;font:10px monospace;text-transform:uppercase}
+ .patient-empty-state{display:grid;place-items:center;min-height:220px;padding:30px;border-top:1px solid #10111440;text-align:center}
+ .patient-empty-state>span{color:var(--pink);font-size:26px}
+ .patient-empty-state strong{margin-top:16px;font-size:15px}
+ .patient-empty-state p{max-width:370px;margin:8px 0 0;color:#101114a5;font-size:13px;line-height:1.5}
+ .patient-coverage{display:grid;grid-template-columns:.65fr 1.35fr;gap:8vw;margin-top:70px;padding:30px 0 0;border-top:1px solid #10111440}
+ .patient-coverage .section-label{color:#10111470}
+ .patient-coverage h3{max-width:300px;margin:23px 0 0;font-size:clamp(30px,3.5vw,54px);line-height:.9;letter-spacing:-.05em}
+ .patient-coverage-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#10111440}
+ .patient-coverage-grid>div{min-height:85px;padding:16px;background:#e4e1d8}
+ .patient-coverage-grid span{display:block;color:var(--pink);font:10px monospace}
+ .patient-coverage-grid strong{display:block;margin-top:15px;font-size:14px}
+ @media(max-width:760px){
+   .hub-journal-divider{margin:80px 0}
+   .hub-journal-heading{margin-bottom:48px}
+   .patient-safety-banner{padding:15px;gap:10px}
+   .patient-safety-banner p{font-size:12px}
+   .patient-demo-badge{display:none}
+   .patient-workspace{display:block;min-height:0}
+   .patient-sidebar{padding:18px}
+   .patient-sidebar-rule{margin:20px 0}
+   .patient-tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+   .patient-tab{padding:11px 8px;font-size:11px}
+   .patient-sidebar-footer{margin-top:24px}
+   .patient-main{padding:30px 20px 40px}
+   .patient-main-header{display:block;padding-bottom:28px}
+   .patient-main-header h2{margin-top:24px;font-size:clamp(45px,13vw,72px)}
+   .patient-primary-action{margin-top:25px}
+   .patient-metrics{grid-template-columns:repeat(2,1fr)}
+   .patient-metrics>div{min-height:105px;padding:13px}
+   .patient-metrics strong{margin:16px 0 6px;font-size:21px}
+   .patient-summary-grid{display:block;background:none}
+   .patient-quick-view{margin-top:1px}
+   .patient-detail-panel{padding:22px 18px}
+   .patient-fields-grid{display:block}
+   .patient-session-list article{display:block}
+   .patient-tag{display:inline-block;margin-top:12px}
+   .patient-goal-list>article{grid-template-columns:28px 1fr}
+   .patient-goal-list>article>small{grid-column:2}
+   .patient-coverage{display:block;margin-top:55px}
+   .patient-coverage h3{margin:20px 0 28px}
+   .patient-coverage-grid{grid-template-columns:1fr}
+ }
  .manifesto-copy{max-width:800px;margin:0 0 40px;font-size:clamp(21px,2.2vw,30px);line-height:1.28;letter-spacing:-.02em}
  .manifesto-copy p{margin:0 0 24px}
  .manifesto-copy p:last-child{margin-bottom:0}
