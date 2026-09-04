@@ -335,6 +335,18 @@ export function PublicationEditor() {
 
   return (
     <section className="publication-studio" aria-labelledby="publication-editor-title">
+      <div className="publication-welcome" aria-label="Bienvenida al estudio editorial">
+        <div className="publication-welcome-mark" aria-hidden="true"><span /> <span /> <span /></div>
+        <div className="publication-welcome-heading">
+          <p className="section-label">Bienvenido</p>
+          <h3>Queremos leerte <em>a ti.</em></h3>
+        </div>
+        <div className="publication-welcome-copy">
+          <p>Este editor no permite copiar ni pegar textos externos; las citas académicas se agregan desde <strong>Insertar cita</strong> porque queremos leerte a ti.</p>
+          <p>Escribe un ensayo de dos a tres cuartillas sobre un tema de psicología que te interese. Cuando esté listo, nosotros lo publicaremos.</p>
+          <p className="publication-welcome-priority">Nuestra prioridad es la comunidad: un espacio hecho por psicólogos para psicólogos.</p>
+        </div>
+      </div>
       <div className="publication-studio-header">
         <div>
           <p className="section-label">Estudio editorial</p>

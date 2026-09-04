@@ -291,6 +291,18 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
 
 /* Publication studio */
  .publication-studio{padding:120px 5vw 135px;background:var(--paper);color:var(--ink);border-top:1px solid #10111440}
+ .publication-welcome{max-width:1400px;margin:0 auto 72px;display:grid;grid-template-columns:24px minmax(250px,.8fr) minmax(320px,1.2fr);gap:24px 28px;align-items:start;padding:24px 0 28px;border-top:1px solid #10111440;border-bottom:1px solid #10111440}
+ .publication-welcome-mark{display:flex;flex-direction:column;gap:4px;padding-top:4px}
+ .publication-welcome-mark span{display:block;width:15px;height:15px;background:var(--pink)}
+ .publication-welcome-mark span:nth-child(2){background:var(--blue);transform:translateX(5px)}
+ .publication-welcome-mark span:nth-child(3){background:var(--yellow);transform:translateX(10px)}
+ .publication-welcome-heading .section-label{color:#10111480}
+ .publication-welcome-heading h3{max-width:420px;margin:26px 0 0;font-size:clamp(35px,4.4vw,64px);line-height:.88;letter-spacing:-.06em}
+ .publication-welcome-heading h3 em{color:var(--pink)}
+ .publication-welcome-copy{max-width:630px;padding-top:22px;color:#101114b5;font-size:15px;line-height:1.55}
+ .publication-welcome-copy p{margin:0 0 14px}
+ .publication-welcome-copy strong{color:var(--ink);font-weight:800}
+ .publication-welcome-priority{padding-top:14px;border-top:1px solid #10111430;color:var(--pink);font-weight:700}
  .publication-studio-header{max-width:1400px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:40px}
  .publication-studio-header .section-label{color:#10111480}
  .publication-studio-header h2{max-width:760px;margin:38px 0 22px;font-size:clamp(48px,6.5vw,96px);line-height:.84;letter-spacing:-.07em}
@@ -412,6 +424,13 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  }
  @media(max-width:760px){
    .publication-studio{padding:85px 6vw 95px}
+   .publication-welcome{display:block;margin-bottom:52px;padding:22px 0 24px}
+   .publication-welcome-mark{flex-direction:row;gap:3px;padding:0;margin-bottom:24px}
+   .publication-welcome-mark span{width:12px;height:12px}
+   .publication-welcome-mark span:nth-child(2){transform:translateY(4px)}
+   .publication-welcome-mark span:nth-child(3){transform:translateY(8px)}
+   .publication-welcome-heading h3{margin-top:22px;font-size:clamp(37px,11vw,60px)}
+   .publication-welcome-copy{padding-top:25px;font-size:14px}
    .publication-studio-header{display:block}
    .publication-studio-header h2{margin:30px 0 20px;font-size:clamp(47px,13vw,78px)}
    .publication-studio-header p:not(.section-label){font-size:16px}
