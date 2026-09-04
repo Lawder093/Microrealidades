@@ -1,3 +1,4 @@
+import { PublicationEditor } from "@/components/publication-editor";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { publications } from "@/lib/publications";
@@ -16,6 +17,7 @@ export default function PublicationsPage() {
         <h1 id="publications-title">Pensar en<br /><em>voz alta.</em></h1>
         <p>Un espacio editorial para compartir notas de campo, conversaciones y herramientas que acompañen otros procesos.</p>
       </section>
+      <PublicationEditor />
       <section className="publication-section" aria-label="Publicaciones">
         <div className="publication-list">
           {publications.map((publication) => (
