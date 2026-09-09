@@ -1,12 +1,14 @@
 export type Project = {
   number: string;
   slug: string;
+  href?: string;
   title: string;
   text: string;
   description: string;
   color: "pink" | "blue" | "yellow";
   status: string;
   area: string;
+  visual?: "brain";
 };
 
 export const projects: Project[] = [
@@ -41,6 +43,21 @@ export const projects: Project[] = [
     area: "Territorio · Organización",
   },
 ];
+
+export const microrealidadesProject: Project = {
+  number: "04",
+  slug: "cerebro",
+  href: "/proyectos/cerebro",
+  title: "Microrealidades",
+  text: "Una experiencia para observar el pensamiento en movimiento, entre anatomía, percepción y tecnología.",
+  description: "Una experiencia visual para observar el pensamiento en movimiento desde una mirada humana, científica e introspectiva.",
+  color: "blue",
+  status: "Explorar",
+  area: "Psicología · Experiencia",
+  visual: "brain",
+};
+
+export const projectsForIndex: Project[] = [...projects, microrealidadesProject];
 
 export function getProject(slug: string) {
   return projects.find((project) => project.slug === slug);

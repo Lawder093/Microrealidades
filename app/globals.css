@@ -470,8 +470,76 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
    .publication-tool-button{min-width:36px;padding-inline:8px}
    .publication-citation-button{font-size:10px}
  }
- @media print{
+@media print{
    .site-header,.publication-studio-header,.publication-meta-panel,.publication-format-line,.publication-editor-toolbar,.publication-editor-actions,.publication-feedback,.citation-dialog-backdrop{display:none!important}
    .publication-studio{padding:0;background:#fff;color:#000}
    .publication-paper,.publication-preview-paper{box-shadow:none;border:0;padding:0}
+ }
+
+ /* Microrealidades / cerebro */
+ .project-card-grid .project-card-visual{display:flex;align-items:center;justify-content:center;min-height:105px;margin:-4px -4px 13px;border-bottom:1px solid #ffffff25}
+ .project-card-grid .project-card-visual svg{display:block;width:min(100%,220px);height:auto;opacity:.9;transition:.25s ease}
+ .project-card-grid:hover .project-card-visual svg{transform:scale(1.04) translateY(-2px);opacity:1}
+ .brain-page{overflow:hidden;background:var(--ink)}
+ .brain-experience{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(190px,.72fr) minmax(420px,1.55fr) minmax(155px,.56fr);grid-template-rows:auto 1fr;column-gap:4vw;min-height:max(680px,calc(100svh - 92px));padding:43px 5vw 52px;overflow:hidden;background:radial-gradient(circle at 52% 48%,#1a2930 0%,#101114 43%,#101114 100%)}
+ .brain-experience::before{content:"";position:absolute;z-index:-1;inset:-30%;background:radial-gradient(ellipse at 50% 55%,#25749c24 0%,transparent 34%),radial-gradient(ellipse at 47% 52%,#dd316d18 0%,transparent 27%);filter:blur(22px);pointer-events:none}
+ .brain-experience-topline{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;color:#ffffff75;font:10px monospace;letter-spacing:.1em;text-transform:uppercase}
+ .brain-experience-topline p{margin:0}
+ .brain-experience-index{color:#ffffff55}
+ .brain-experience-copy{grid-column:1;grid-row:2;align-self:center;position:relative;z-index:4;max-width:305px}
+ .brain-experience-copy>.section-label{color:#ffffff65}
+ .brain-experience-copy h1{margin:30px 0 29px;font-size:clamp(49px,5vw,82px);line-height:.82;letter-spacing:-.075em}
+ .brain-experience-copy h1 em{color:var(--blue)}
+ .brain-experience-description{max-width:280px;margin:0;color:#ffffffa6;font-size:15px;line-height:1.52}
+ .brain-skip-intro{margin-top:29px;padding:0 0 7px;border:0;border-bottom:1px solid var(--yellow);background:transparent;color:#ffffffb5;font:10px monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+ .brain-skip-intro span{margin-left:14px;color:var(--yellow);font-size:15px}
+ .brain-skip-intro:hover,.brain-skip-intro:focus-visible{color:var(--white)}
+ .brain-stage{grid-column:2;grid-row:1/-1;position:relative;z-index:1;min-height:620px;margin:-18px 0 -18px}
+ .brain-stage::before{content:"";position:absolute;z-index:0;inset:17% 7%;border-radius:50%;background:radial-gradient(ellipse,#5cc4bc20 0%,#dd316d12 37%,transparent 70%);filter:blur(22px);pointer-events:none}
+ .brain-canvas{position:absolute!important;z-index:1;inset:0;width:100%!important;height:100%!important;touch-action:none}
+ .brain-canvas>canvas{display:block;width:100%!important;height:100%!important;outline:none}
+ .brain-fallback{position:absolute;z-index:1;inset:8%;display:grid;place-items:center;pointer-events:none}
+ .brain-fallback svg{display:block;width:min(100%,560px);height:auto;overflow:visible;opacity:.9}
+ .brain-fallback.compact svg{max-width:285px;opacity:.48;transform:scale(.72)}
+ .brain-entry-curtain{position:absolute;z-index:3;inset:0;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,#101114cc 0%,#101114 64%);opacity:1;transition:opacity 1.45s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+ .brain-experience.is-intro-complete .brain-entry-curtain{opacity:0}
+ .brain-entry-pulse{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 5px #6ec2bd12,0 0 18px 5px #6ec2bd80;animation:brain-pulse-drift 2.2s ease-in-out infinite}
+ .brain-entry-pulse.pulse-one{top:40%;left:42%;animation-delay:-.7s;background:var(--pink);box-shadow:0 0 0 5px #dd316d12,0 0 18px 5px #dd316d80}
+ .brain-entry-pulse.pulse-two{top:52%;left:58%;animation-delay:-1.4s;background:var(--yellow);box-shadow:0 0 0 5px #f4b82712,0 0 18px 5px #f4b82780}
+ .brain-entry-pulse.pulse-three{top:62%;left:47%;animation-delay:-.15s}
+ .brain-stage-readout{position:absolute;z-index:4;right:7%;bottom:8%;display:flex;align-items:center;gap:8px;color:#ffffff88;font:9px monospace;letter-spacing:.08em;text-transform:uppercase;pointer-events:none}
+ .brain-live-dot{width:6px;height:6px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 4px #dd316d20,0 0 11px #dd316d85}
+ .brain-stage-readout-separator{color:#ffffff3f}
+ .brain-experience-aside{grid-column:3;grid-row:2;align-self:end;position:relative;z-index:4;max-width:185px;color:#ffffff9c;font-size:13px;line-height:1.55}
+ .brain-experience-aside .section-label{margin:0 0 18px;color:#ffffff60}
+ .brain-experience-aside p{margin:0}
+ .brain-experience-aside .brain-asset-note{margin-top:24px;color:#ffffff4f;font:9px/1.5 monospace;letter-spacing:.06em;text-transform:uppercase}
+ @keyframes brain-pulse-drift{0%,100%{transform:translate3d(-8px,5px,0) scale(.7);opacity:.25}50%{transform:translate3d(10px,-9px,0) scale(1.5);opacity:1}}
+
+ @media(max-width:760px){
+   .project-card-grid .project-card-visual{min-height:87px;margin:-2px -2px 11px}
+   .project-card-grid .project-card-visual svg{max-width:185px}
+   .brain-experience{display:block;min-height:0;padding:44px 6vw 78px;background:radial-gradient(circle at 50% 39%,#1a2930 0%,#101114 48%,#101114 100%)}
+   .brain-experience-topline{align-items:flex-start;gap:22px;line-height:1.35}
+   .brain-experience-index{max-width:105px;text-align:right}
+   .brain-experience-copy{max-width:340px;margin:57px 0 0}
+   .brain-experience-copy h1{margin:27px 0 25px;font-size:clamp(53px,15vw,78px)}
+   .brain-experience-description{max-width:310px;font-size:14px}
+   .brain-skip-intro{margin-top:25px}
+   .brain-stage{height:min(120vw,520px);min-height:400px;margin:3px -6vw 0}
+   .brain-stage::before{inset:13% 3%}
+   .brain-stage-readout{right:6%;bottom:5%;left:6%;flex-wrap:wrap;gap:6px;font-size:8px}
+   .brain-experience-aside{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:12px 0 0;max-width:none;font-size:12px}
+   .brain-experience-aside .section-label{grid-column:1/-1;margin:0}
+   .brain-experience-aside .brain-asset-note{align-self:end;margin:0}
+ }
+ @media(max-width:390px){
+   .brain-stage{height:410px;min-height:410px}
+   .brain-experience-aside{display:block}
+   .brain-experience-aside .brain-asset-note{margin-top:18px}
+ }
+ @media(prefers-reduced-motion:reduce){
+   .brain-entry-curtain{transition-duration:.25s}
+   .brain-entry-pulse{animation:none}
+   .brain-canvas{touch-action:none}
  }

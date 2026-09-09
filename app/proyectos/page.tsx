@@ -1,7 +1,7 @@
 import { ProjectCard } from "@/components/project-card";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { projects } from "@/lib/projects";
+import { projectsForIndex } from "@/lib/projects";
 
 export const metadata = {
   title: "Proyectos — Microrealidades",
@@ -19,7 +19,7 @@ export default function ProjectsPage() {
       </section>
       <section className="project-grid-section" aria-label="Proyectos en desarrollo">
         <div className="project-grid">
-          {projects.map((project) => <ProjectCard key={project.slug} project={project} variant="grid" />)}
+          {projectsForIndex.map((project) => <ProjectCard key={project.slug} project={project} variant="grid" />)}
         </div>
       </section>
       <SiteFooter />
