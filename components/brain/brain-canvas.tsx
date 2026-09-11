@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Suspense, useEffect, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { BrainControls } from "@/components/brain/brain-controls";
+import type { BrainFocus } from "@/components/brain/brain-anatomy";
+import { BrainInteractionController } from "@/components/brain/brain-controls";
 import { BrainModel } from "@/components/brain/brain-model";
 import { NeuralActivity } from "@/components/brain/neural-activity";
 
@@ -24,9 +25,12 @@ function LoadingCore({ reducedMotion }: { reducedMotion: boolean }) {
   );
 }
 
-function BrainScene({ introComplete, reducedMotion, onModelReady }: { introComplete: boolean; reducedMotion: boolean; onModelReady?: () => void }) {
+function BrainScene({ introComplete, reducedMotion, focusRegion, onModelReady }: { introComplete: boolean; reducedMotion: boolean; focusRegion: BrainFocus; onModelReady?: () => void }) {
+  const { camera, gl } = useThree();
+  const interactionGroup = useRef<THREE.Group>(null);
   const revealGroup = useRef<THREE.Group>(null);
   const revealProgress = useRef(0.78);
+  const controller = useRef<BrainInteractionController | null>(null);
 
   useFrame((_, delta) => {
     if (!revealGroup.current) return;
@@ -38,19 +42,38 @@ function BrainScene({ introComplete, reducedMotion, onModelReady }: { introCompl
     revealGroup.current.scale.set(revealProgress.current * 3.55, revealProgress.current * 1.4, revealProgress.current * 3.55);
   });
 
+  useEffect(() => {
+    const nextController = new BrainInteractionController(gl.domElement, camera as THREE.PerspectiveCamera, reducedMotion);
+    controller.current = nextController;
+    nextController.attach();
+    return () => {
+      nextController.dispose();
+      controller.current = null;
+    };
+  }, [camera, gl, reducedMotion]);
+
+  useFrame((_, delta) => {
+    const group = interactionGroup.current;
+    if (group) controller.current?.update(group, delta);
+  });
+
   return (
-    <group ref={revealGroup} rotation={[-Math.PI / 2, Math.PI, 0]}>
-      <Suspense fallback={<LoadingCore reducedMotion={reducedMotion} />}>
-        <BrainModel onReady={onModelReady} />
-        <group scale={0.18}>
-          <NeuralActivity reducedMotion={reducedMotion} />
+    <>
+      <group ref={interactionGroup}>
+        <group ref={revealGroup} rotation={[-Math.PI / 2, Math.PI, 0]}>
+          <Suspense fallback={<LoadingCore reducedMotion={reducedMotion} />}>
+            <BrainModel onReady={onModelReady} focusRegion={focusRegion} />
+            <group scale={0.18}>
+              <NeuralActivity reducedMotion={reducedMotion} />
+            </group>
+          </Suspense>
         </group>
-      </Suspense>
-    </group>
+      </group>
+    </>
   );
 }
 
-export function BrainCanvas({ introComplete, reducedMotion, onModelReady }: { introComplete: boolean; reducedMotion: boolean; onModelReady?: () => void }) {
+export function BrainCanvas({ introComplete, reducedMotion, focusRegion = "all", onModelReady }: { introComplete: boolean; reducedMotion: boolean; focusRegion?: BrainFocus; onModelReady?: () => void }) {
   return (
     <Canvas
       className="brain-canvas"
@@ -72,8 +95,7 @@ export function BrainCanvas({ introComplete, reducedMotion, onModelReady }: { in
       <directionalLight position={[-2.5, 2, -5]} intensity={1.35} color="#6ec2bd" />
       <pointLight position={[0, 0.1, 1.65]} intensity={1.55} distance={4.8} color="#ef6f9b" />
       <pointLight position={[0, -0.3, -1.6]} intensity={1.2} distance={4.5} color="#5fc1bd" />
-      <BrainScene introComplete={introComplete} reducedMotion={reducedMotion} onModelReady={onModelReady} />
-      <BrainControls reducedMotion={reducedMotion} />
+      <BrainScene introComplete={introComplete} reducedMotion={reducedMotion} focusRegion={focusRegion} onModelReady={onModelReady} />
     </Canvas>
   );
 }

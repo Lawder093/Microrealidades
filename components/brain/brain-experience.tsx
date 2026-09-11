@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
+import { brainAnatomyLegend, type BrainFocus } from "@/components/brain/brain-anatomy";
 import { BrainFallback } from "@/components/brain/brain-fallback";
 
 const BrainCanvas = dynamic(() => import("@/components/brain/brain-canvas").then((module) => module.BrainCanvas), {
@@ -30,11 +31,27 @@ function hasWebGL() {
   }
 }
 
+const focusOptions: Array<{ id: BrainFocus; label: string }> = [
+  { id: "all", label: "Todo" },
+  { id: "frontal", label: "Frontal" },
+  { id: "parietal", label: "Parietal" },
+  { id: "temporal", label: "Temporal" },
+  { id: "occipital", label: "Occipital" },
+  { id: "cerebellum", label: "Cerebelo" },
+  { id: "interior", label: "Interior" },
+  { id: "whiteMatter", label: "Sust. blanca" },
+  { id: "tracts", label: "Tractos" },
+  { id: "nuclei", label: "Núcleos" },
+  { id: "ventricles", label: "Ventrículos" },
+  { id: "brainstem", label: "Tronco" },
+];
+
 export function BrainExperience() {
   const [webglAvailable, setWebglAvailable] = useState<boolean | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [introComplete, setIntroComplete] = useState(false);
   const [modelReady, setModelReady] = useState(false);
+  const [focusRegion, setFocusRegion] = useState<BrainFocus>("all");
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -76,7 +93,7 @@ export function BrainExperience() {
           <BrainFallback compact />
         ) : (
           <BrainErrorBoundary fallback={<BrainFallback />}>
-            <BrainCanvas introComplete={introComplete} reducedMotion={reducedMotion} onModelReady={handleModelReady} />
+            <BrainCanvas introComplete={introComplete} reducedMotion={reducedMotion} focusRegion={focusRegion} onModelReady={handleModelReady} />
           </BrainErrorBoundary>
         )}
         <div className="brain-entry-curtain" aria-hidden="true">
@@ -96,6 +113,36 @@ export function BrainExperience() {
         <p className="section-label">Observación</p>
         <p>La superficie deja pasar la luz suficiente para que la red interna permanezca visible.</p>
         <p className="brain-asset-note">Modelo anatómico · visualización no clínica</p>
+        <div className="brain-focus-panel">
+          <p className="section-label">Explorar por capas</p>
+          <div className="brain-focus-options" role="group" aria-label="Enfoque anatómico">
+            {focusOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={focusRegion === option.id ? "is-active" : ""}
+                aria-pressed={focusRegion === option.id}
+                onClick={() => setFocusRegion(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="brain-anatomy-key" aria-label="Partes anatómicas visibles">
+          <p className="section-label">Lectura anatómica</p>
+          <ul>
+            {brainAnatomyLegend.map((part) => (
+              <li key={part.id}>
+                <span className="brain-anatomy-swatch" style={{ backgroundColor: part.color }} />
+                <span>
+                  <strong>{part.label}</strong>
+                  <small>{part.detail}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </aside>
     </section>
   );
