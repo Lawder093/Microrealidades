@@ -42,10 +42,21 @@ export const projects: Project[] = [
     status: "En desarrollo",
     area: "Territorio · Organización",
   },
+  {
+    number: "04",
+    slug: "super-bateria-01",
+    href: "/evaluaciones-psicometricas",
+    title: "Super batería 01",
+    text: "Una matriz configurable para observar el perfil profesional de terapeutas durante procesos de reclutamiento.",
+    description: "Una herramienta en construcción para reunir casos, conocimientos y escalas de trabajo en una experiencia protegida.",
+    color: "pink",
+    status: "En preparación",
+    area: "Psicología · Evaluación",
+  },
 ];
 
 export const microrealidadesProject: Project = {
-  number: "04",
+  number: "05",
   slug: "cerebro",
   href: "/proyectos/cerebro",
   title: "Microrealidades",

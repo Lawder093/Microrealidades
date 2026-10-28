@@ -7,10 +7,7 @@ if [[ "${SITES_ENV_READY:-}" != "1" ]]; then
   exec "${script_dir}/sites-env.sh" -- "$0" "$@"
 fi
 
-command -v timeout || {
-  echo "build-verified.sh requires GNU timeout." >&2
-  exit 69
-}
+timeout_bin="$(command -v timeout || command -v gtimeout || true)"
 
 vinext="${SITES_PROJECT_ROOT}/node_modules/.bin/vinext"
 if [[ ! -x "${vinext}" ]]; then
@@ -19,8 +16,13 @@ if [[ ! -x "${vinext}" ]]; then
 fi
 
 echo "Running bounded vinext build..."
-timeout \
-  --signal=TERM \
-  --kill-after="${SITES_BUILD_KILL_AFTER:-10s}" \
-  "${SITES_BUILD_TIMEOUT:-3m}" \
+if [[ -n "${timeout_bin}" ]]; then
+  "${timeout_bin}" \
+    --signal=TERM \
+    --kill-after="${SITES_BUILD_KILL_AFTER:-10s}" \
+    "${SITES_BUILD_TIMEOUT:-3m}" \
+    "${vinext}" build
+else
+  echo "GNU timeout/gtimeout is unavailable; running the build without a time limit on this macOS environment." >&2
   "${vinext}" build
+fi

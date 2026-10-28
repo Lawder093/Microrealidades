@@ -33,6 +33,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <div>
             <p>{project.description}</p>
             <span className="status">{project.status}</span>
+            {project.slug === "vidovic-01" && <Link className="section-link project-evaluation-link" href="/evaluaciones-psicometricas">Abrir Super batería 01 <span aria-hidden="true">↗</span></Link>}
           </div>
         </div>
       </article>
