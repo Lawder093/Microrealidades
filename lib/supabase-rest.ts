@@ -1,5 +1,7 @@
 const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Acepta el nombre legacy y el nombre recomendado para no obligar a duplicar
+// la misma llave en Vercel. Ambos deben permanecer exclusivamente en servidor.
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY;
 
 export function supabaseIsConfigured() {
   return Boolean(supabaseUrl && supabaseKey);
@@ -7,7 +9,7 @@ export function supabaseIsConfigured() {
 
 export function supabaseConfigurationError() {
   if (!supabaseUrl) return "Falta SUPABASE_URL o NEXT_PUBLIC_SUPABASE_URL en las variables del servidor.";
-  if (!supabaseKey) return "Falta SUPABASE_SERVICE_ROLE_KEY en las variables del servidor de Vercel.";
+  if (!supabaseKey) return "Falta SUPABASE_SECRET_KEY o SUPABASE_SERVICE_ROLE_KEY en las variables del servidor de Vercel.";
   return null;
 }
 

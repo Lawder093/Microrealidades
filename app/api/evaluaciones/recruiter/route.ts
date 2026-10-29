@@ -11,11 +11,22 @@ async function authenticatedUser(request: Request) {
   return supabaseUser(authorization.slice(7));
 }
 
+async function ensureRecruiter(user: { id: string; email?: string }) {
+  const email = user.email ?? `${user.id}@reclutador.local`;
+  const nombre = user.email?.split("@")[0] || "Reclutador";
+  await supabaseRest("reclutadores", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ id: user.id, nombre, email }),
+  });
+}
+
 export async function GET(request: Request) {
   if (!supabaseIsConfigured()) return jsonError(supabaseConfigurationError() ?? "La conexión segura de Supabase aún no está configurada.", 503);
   const user = await authenticatedUser(request);
   if (!user) return jsonError("Sesión de reclutador no válida.", 401);
   try {
+    await ensureRecruiter(user);
     const batteries = await supabaseRest<Array<Record<string, unknown>>>(`baterias?reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,nombre,clasificacion_puesto,pruebas,tiempo_total_min,activa,created_at&order=created_at.desc`);
     const sessions = await supabaseRest<Array<Record<string, unknown>>>(`sesiones_evaluacion?reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,codigo,bateria_id,candidato_nombre,candidato_edad,candidato_empresa,estado,resultados,pdf_path,created_at,finalizado_en,baterias(nombre,clasificacion_puesto)&order=created_at.desc`);
     return Response.json({ batteries, sessions });
@@ -30,6 +41,7 @@ export async function POST(request: Request) {
   if (!user) return jsonError("Sesión de reclutador no válida.", 401);
   const body = await request.json() as { action?: "create-battery" | "create-session"; name?: string; classification?: string; totalMinutes?: number; tests?: BatteryAssignment[]; batteryId?: string };
   try {
+    await ensureRecruiter(user);
     if (body.action === "create-battery") {
       const requestedTests = Array.isArray(body.tests) ? body.tests : [];
       if (requestedTests.length === 0) return jsonError("Selecciona al menos una prueba para crear la batería.");
