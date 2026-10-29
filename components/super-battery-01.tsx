@@ -31,11 +31,11 @@ function DemoNotice() {
   return <div className="super-battery-notice"><span aria-hidden="true">!</span><p><strong>Modo de preparación.</strong> Supabase no está conectado en este entorno. Las acciones locales son únicamente de prueba y no deben contener información real.</p></div>;
 }
 
-export function SuperBattery01() {
-  const [mode, setMode] = useState<SuperBatteryMode>("home");
+export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?: string } = {}) {
+  const [mode, setMode] = useState<SuperBatteryMode>(initialCandidateCode ? "candidate" : "home");
   const [candidateStage, setCandidateStage] = useState<CandidateStage>("access");
   const [candidateSessionId, setCandidateSessionId] = useState("");
-  const [candidateCode, setCandidateCode] = useState("");
+  const [candidateCode, setCandidateCode] = useState(initialCandidateCode?.trim().toUpperCase() ?? "");
   const [candidateName, setCandidateName] = useState("");
   const [candidateAge, setCandidateAge] = useState("");
   const [candidateCompany, setCandidateCompany] = useState("");
@@ -64,12 +64,12 @@ export function SuperBattery01() {
   const progress = candidateItems.length ? Math.round((answered / candidateItems.length) * 100) : 0;
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("codigo")?.trim().toUpperCase();
+    const code = initialCandidateCode?.trim().toUpperCase() ?? new URLSearchParams(window.location.search).get("codigo")?.trim().toUpperCase();
     if (code) {
       setCandidateCode(code);
       setMode("candidate");
     }
-  }, []);
+  }, [initialCandidateCode]);
 
   useEffect(() => {
     if (candidateStage !== "quiz") return undefined;
@@ -156,7 +156,7 @@ export function SuperBattery01() {
     if (!hasSupabase || !recruiterToken) {
       const code = `SB01-DEMO${String(Date.now()).slice(-4)}`;
       setDemoCode(code);
-      setShareLink(`${window.location.origin}/evaluaciones-psicometricas?codigo=${encodeURIComponent(code)}`);
+      setShareLink(`${window.location.origin}/evaluacion/${encodeURIComponent(code)}`);
       setMessage("Código de prueba generado. No abre una sesión real.");
       return;
     }
@@ -165,7 +165,7 @@ export function SuperBattery01() {
     if (data.session) {
       setSessions((current) => [data.session as DashboardSession, ...current]);
       const code = (data.session as DashboardSession).codigo;
-      const link = `${window.location.origin}${data.sharePath ?? `/evaluaciones-psicometricas?codigo=${encodeURIComponent(code)}`}`;
+      const link = `${window.location.origin}${data.sharePath ?? `/evaluacion/${encodeURIComponent(code)}`}`;
       setShareLink(link);
       setMessage(`Código generado: ${code}. Comparte el enlace privado.`);
     } else setRecruiterError(data.error ?? "No se pudo generar el código.");
@@ -186,7 +186,7 @@ export function SuperBattery01() {
   }
 
   async function copyShareLinkForCode(code: string) {
-    const link = `${window.location.origin}/evaluaciones-psicometricas?codigo=${encodeURIComponent(code)}`;
+    const link = `${window.location.origin}/evaluacion/${encodeURIComponent(code)}`;
     setShareLink(link);
     await copyLink(link);
   }

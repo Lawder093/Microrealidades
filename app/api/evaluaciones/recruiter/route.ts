@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       if (!ownedBatteries[0]) return jsonError("La batería no existe o no pertenece a este reclutador.", 404);
       const code = `SB01-${crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
       const session = await supabaseRest<Array<Record<string, unknown>>>("sesiones_evaluacion", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ codigo: code, bateria_id: body.batteryId, reclutador_id: user.id }) });
-      return Response.json({ session: session[0], sharePath: `/evaluaciones-psicometricas?codigo=${encodeURIComponent(code)}` });
+      return Response.json({ session: session[0], sharePath: `/evaluacion/${encodeURIComponent(code)}` });
     }
     return jsonError("Acción no reconocida.");
   } catch (error) {
