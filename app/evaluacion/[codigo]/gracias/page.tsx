@@ -13,7 +13,7 @@ export default function EvaluationThanksPage() {
       <section className="page-intro psychometric-page-intro" aria-labelledby="thanks-title">
         <p className="section-label">[ 05 ] &nbsp; Aplicación recibida</p>
         <h1 id="thanks-title">Gracias por<br /><em>participar.</em></h1>
-        <p>Tu evaluación fue recibida correctamente. El equipo responsable revisará la información como parte del proceso profesional.</p>
+        <p>Tu evaluación fue recibida correctamente. El reporte queda disponible para el reclutador responsable, quien revisará la información como parte del proceso profesional.</p>
       </section>
       <SiteFooter />
     </main>
