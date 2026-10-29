@@ -5,13 +5,25 @@ export function supabaseIsConfigured() {
   return Boolean(supabaseUrl && supabaseKey);
 }
 
+export function supabaseConfigurationError() {
+  if (!supabaseUrl) return "Falta SUPABASE_URL o NEXT_PUBLIC_SUPABASE_URL en las variables del servidor.";
+  if (!supabaseKey) return "Falta SUPABASE_SERVICE_ROLE_KEY en las variables del servidor de Vercel.";
+  return null;
+}
+
+function getSupabaseConfig() {
+  const configurationError = supabaseConfigurationError();
+  if (configurationError || !supabaseUrl || !supabaseKey) throw new Error(configurationError ?? "Supabase no está configurado en el entorno del servidor.");
+  return { url: supabaseUrl, key: supabaseKey };
+}
+
 export async function supabaseRest<T>(path: string, init: RequestInit = {}) {
-  if (!supabaseUrl || !supabaseKey) throw new Error("Supabase no está configurado en el entorno del servidor.");
-  const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
+  const { url, key } = getSupabaseConfig();
+  const response = await fetch(`${url}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
+      apikey: key,
+      Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
@@ -23,15 +35,15 @@ export async function supabaseRest<T>(path: string, init: RequestInit = {}) {
 }
 
 export async function supabaseUser(accessToken: string) {
-  if (!supabaseUrl || !supabaseKey) throw new Error("Supabase no está configurado en el entorno del servidor.");
-  const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: { apikey: supabaseKey, Authorization: `Bearer ${accessToken}` }, cache: "no-store" });
+  const { url, key } = getSupabaseConfig();
+  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: key, Authorization: `Bearer ${accessToken}` }, cache: "no-store" });
   if (!response.ok) return null;
   return response.json() as Promise<{ id: string; email?: string }>;
 }
 
 export async function supabaseStorageUpload(path: string, body: BodyInit) {
-  if (!supabaseUrl || !supabaseKey) throw new Error("Supabase no está configurado en el entorno del servidor.");
-  const response = await fetch(`${supabaseUrl}/storage/v1/object/${path}`, { method: "POST", headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, "Content-Type": "application/pdf", "x-upsert": "true" }, body, cache: "no-store" });
+  const { url, key } = getSupabaseConfig();
+  const response = await fetch(`${url}/storage/v1/object/${path}`, { method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/pdf", "x-upsert": "true" }, body, cache: "no-store" });
   if (!response.ok) throw new Error(`Storage respondió ${response.status}.`);
 }
 

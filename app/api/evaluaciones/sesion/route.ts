@@ -1,6 +1,6 @@
 import { assignmentTestId, calculateConfiguredBatteryResult, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
-import { supabaseIsConfigured, supabaseRest, supabaseStorageUpload } from "@/lib/supabase-rest";
+import { supabaseConfigurationError, supabaseIsConfigured, supabaseRest, supabaseStorageUpload } from "@/lib/supabase-rest";
 import { createEvaluationPdf } from "@/lib/evaluation-pdf";
 
 type SessionRow = { id: string; codigo: string; bateria_id: string; estado: string; candidato_nombre: string | null; candidato_edad: number | null; candidato_empresa: string | null; baterias: { nombre: string; pruebas: BatteryAssignment[]; tiempo_total_min: number } | null };
@@ -10,7 +10,7 @@ function jsonError(message: string, status = 400) {
 }
 
 export async function POST(request: Request) {
-  if (!supabaseIsConfigured()) return jsonError("La conexión segura de Supabase aún no está configurada.", 503);
+  if (!supabaseIsConfigured()) return jsonError(supabaseConfigurationError() ?? "La conexión segura de Supabase aún no está configurada.", 503);
   const body = await request.json() as { action?: "start" | "complete"; code?: string; sessionId?: string; name?: string; age?: number; company?: string; responses?: Record<string, Respuesta> };
   const code = body.code?.trim().toUpperCase();
   if (!code) return jsonError("Código requerido.");

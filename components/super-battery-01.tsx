@@ -116,6 +116,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     const data = await response.json() as { batteries?: DashboardBattery[]; sessions?: DashboardSession[]; error?: string };
     if (!response.ok) {
       setRecruiterError(data.error ?? "No se pudo cargar el dashboard.");
+      setMessage(data.error ?? "No se pudo cargar el dashboard.");
       return;
     }
     setBatteries(data.batteries ?? []);
@@ -148,7 +149,10 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     if (data.battery) {
       setBatteries((current) => [data.battery as DashboardBattery, ...current]);
       setMessage("Batería creada.");
-    } else setRecruiterError(data.error ?? "No se pudo crear la batería.");
+    } else {
+      setRecruiterError(data.error ?? "No se pudo crear la batería.");
+      setMessage(data.error ?? "No se pudo crear la batería.");
+    }
   }
 
   async function createCode(batteryId: string) {
@@ -168,7 +172,10 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
       const link = `${window.location.origin}${data.sharePath ?? `/evaluacion/${encodeURIComponent(code)}`}`;
       setShareLink(link);
       setMessage(`Código generado: ${code}. Comparte el enlace privado.`);
-    } else setRecruiterError(data.error ?? "No se pudo generar el código.");
+    } else {
+      setRecruiterError(data.error ?? "No se pudo generar el código.");
+      setMessage(data.error ?? "No se pudo generar el código.");
+    }
   }
 
   async function copyLink(link: string) {

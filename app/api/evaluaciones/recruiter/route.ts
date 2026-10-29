@@ -1,5 +1,5 @@
 import { batteryTestCatalog, defaultBattery, type BatteryAssignment } from "@/lib/psychometric-battery";
-import { supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
+import { supabaseConfigurationError, supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
 
 function jsonError(message: string, status = 400) {
   return Response.json({ error: message }, { status });
@@ -12,7 +12,7 @@ async function authenticatedUser(request: Request) {
 }
 
 export async function GET(request: Request) {
-  if (!supabaseIsConfigured()) return jsonError("La conexión segura de Supabase aún no está configurada.", 503);
+  if (!supabaseIsConfigured()) return jsonError(supabaseConfigurationError() ?? "La conexión segura de Supabase aún no está configurada.", 503);
   const user = await authenticatedUser(request);
   if (!user) return jsonError("Sesión de reclutador no válida.", 401);
   try {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!supabaseIsConfigured()) return jsonError("La conexión segura de Supabase aún no está configurada.", 503);
+  if (!supabaseIsConfigured()) return jsonError(supabaseConfigurationError() ?? "La conexión segura de Supabase aún no está configurada.", 503);
   const user = await authenticatedUser(request);
   if (!user) return jsonError("Sesión de reclutador no válida.", 401);
   const body = await request.json() as { action?: "create-battery" | "create-session"; name?: string; classification?: string; totalMinutes?: number; tests?: BatteryAssignment[]; batteryId?: string };

@@ -1,10 +1,10 @@
-import { supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
+import { supabaseConfigurationError, supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
 import { createEvaluationPdf } from "@/lib/evaluation-pdf";
 
 type SessionReport = { codigo: string; candidato_nombre: string | null; candidato_edad: number | null; candidato_empresa: string | null; resultados: { globalScore?: number | null; dimensions?: Array<{ dimension: string; score: number | null; answered: number; total: number }> } | null; finalizado_en: string | null };
 
 export async function GET(request: Request) {
-  if (!supabaseIsConfigured()) return Response.json({ error: "Supabase no está configurado." }, { status: 503 });
+  if (!supabaseIsConfigured()) return Response.json({ error: supabaseConfigurationError() ?? "Supabase no está configurado." }, { status: 503 });
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   const sessionId = new URL(request.url).searchParams.get("sessionId");
   if (!token || !sessionId) return Response.json({ error: "Autenticación y sesión requeridas." }, { status: 401 });
