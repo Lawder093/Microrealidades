@@ -1,4 +1,4 @@
-import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
+import { calculateConfiguredBatteryResult, getBatteryItems } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { supabaseIsConfigured, supabaseRest, supabaseStorageUpload } from "@/lib/supabase-rest";
 import { createEvaluationPdf } from "@/lib/evaluation-pdf";
@@ -24,7 +24,14 @@ export async function POST(request: Request) {
     if (body.action === "complete") {
       if (!body.sessionId || body.sessionId !== session.id || !body.responses) return jsonError("Sesión o respuestas inválidas.");
       if (session.estado === "completado") return jsonError("Este código ya fue utilizado.", 409);
+      if (session.estado !== "en_progreso") return jsonError("La sesión todavía no ha sido iniciada.", 409);
       const testIds = session.baterias?.pruebas?.map((test) => test.testId) ?? [];
+      const assignedItems = getBatteryItems(testIds);
+      const assignedIds = new Set(assignedItems.map((item) => item.id));
+      const responseIds = Object.keys(body.responses);
+      if (responseIds.some((id) => !assignedIds.has(id)) || assignedItems.some((item) => body.responses?.[item.id] === undefined)) {
+        return jsonError("La respuesta no coincide con los ítems asignados a esta batería.");
+      }
       const results = calculateConfiguredBatteryResult(testIds, body.responses);
       const reportPdf = createEvaluationPdf({ code, candidateName: session.candidato_nombre, candidateAge: session.candidato_edad, candidateCompany: session.candidato_empresa, completedAt: new Date().toISOString(), globalScore: results.globalScore, dimensions: results.dimensions });
       let pdfPath: string | null = null;

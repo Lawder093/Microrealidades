@@ -1,4 +1,4 @@
-import { defaultBattery } from "@/lib/psychometric-battery";
+import { batteryTestCatalog, defaultBattery } from "@/lib/psychometric-battery";
 import { supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
 
 function jsonError(message: string, status = 400) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   if (!user) return jsonError("Sesión de reclutador no válida.", 401);
   try {
     const batteries = await supabaseRest<Array<Record<string, unknown>>>(`baterias?reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,nombre,clasificacion_puesto,pruebas,tiempo_total_min,activa,created_at&order=created_at.desc`);
-    const sessions = await supabaseRest<Array<Record<string, unknown>>>(`sesiones_evaluacion?reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,codigo,bateria_id,candidato_nombre,candidato_edad,candidato_empresa,estado,resultados,pdf_path,created_at,finalizado_en&order=created_at.desc`);
+    const sessions = await supabaseRest<Array<Record<string, unknown>>>(`sesiones_evaluacion?reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,codigo,bateria_id,candidato_nombre,candidato_edad,candidato_empresa,estado,resultados,pdf_path,created_at,finalizado_en,baterias(nombre,clasificacion_puesto)&order=created_at.desc`);
     return Response.json({ batteries, sessions });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "No se pudo cargar el dashboard.", 500);
@@ -31,13 +31,23 @@ export async function POST(request: Request) {
   const body = await request.json() as { action?: "create-battery" | "create-session"; name?: string; classification?: string; totalMinutes?: number; tests?: Array<{ testId: string; order: number; timeLimitSeconds: number }>; batteryId?: string };
   try {
     if (body.action === "create-battery") {
-      const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: body.tests?.length ? body.tests : defaultBattery.tests, tiempo_total_min: body.totalMinutes || defaultBattery.totalMinutes }) });
+      const requestedTests = Array.isArray(body.tests) ? body.tests : [];
+      const requestedIds = requestedTests.map((test) => test.testId);
+      const allowedIds = new Set(batteryTestCatalog.map((test) => test.id));
+      const hasDuplicateTests = new Set(requestedIds).size !== requestedIds.length;
+      const hasUnknownTests = requestedIds.some((testId) => !allowedIds.has(testId));
+      if (requestedTests.length > 0 && (hasDuplicateTests || hasUnknownTests)) return jsonError("La batería contiene pruebas inválidas o duplicadas.");
+      const totalMinutes = Number(body.totalMinutes ?? defaultBattery.totalMinutes);
+      if (!Number.isFinite(totalMinutes) || totalMinutes < 1 || totalMinutes > 240) return jsonError("El tiempo total debe estar entre 1 y 240 minutos.");
+      const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: requestedTests.length ? requestedTests : defaultBattery.tests, tiempo_total_min: totalMinutes }) });
       return Response.json({ battery: battery[0] });
     }
     if (body.action === "create-session" && body.batteryId) {
+      const ownedBatteries = await supabaseRest<Array<{ id: string }>>(`baterias?id=eq.${encodeURIComponent(body.batteryId)}&reclutador_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`);
+      if (!ownedBatteries[0]) return jsonError("La batería no existe o no pertenece a este reclutador.", 404);
       const code = `SB01-${crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
       const session = await supabaseRest<Array<Record<string, unknown>>>("sesiones_evaluacion", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ codigo: code, bateria_id: body.batteryId, reclutador_id: user.id }) });
-      return Response.json({ session: session[0] });
+      return Response.json({ session: session[0], sharePath: `/evaluaciones-psicometricas?codigo=${encodeURIComponent(code)}` });
     }
     return jsonError("Acción no reconocida.");
   } catch (error) {
