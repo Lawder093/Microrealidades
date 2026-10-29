@@ -21,8 +21,27 @@ async function ensureRecruiter(user: { id: string; email?: string }) {
   });
 }
 
-function newAssignmentId() {
-  return `PRB-${crypto.randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`;
+function asAssignments(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is BatteryAssignment => Boolean(item && typeof item === "object"))
+    : [];
+}
+
+function isInterventionId(value: string) {
+  return /^IB-\d+$/i.test(value);
+}
+
+async function allocateAssignmentIds(quantity: number) {
+  const batteries = await supabaseRest<Array<{ pruebas: unknown }>>("baterias?select=pruebas");
+  let highest = 0;
+  for (const battery of batteries) {
+    for (const assignment of asAssignments(battery.pruebas)) {
+      const match = /^IB-(\d+)$/i.exec(assignmentAccessId(assignment));
+      const current = match ? Number(match[1]) : 0;
+      if (Number.isSafeInteger(current)) highest = Math.max(highest, current);
+    }
+  }
+  return Array.from({ length: quantity }, (_, index) => `IB-${String(highest + index + 1).padStart(4, "0")}`);
 }
 
 function testLinks(code: string, assignments: BatteryAssignment[]) {
@@ -76,11 +95,12 @@ export async function POST(request: Request) {
         return !Number.isInteger(seconds) || seconds < 60 || seconds > 14400;
       });
       if (invalidTimeLimit) return jsonError("Cada prueba debe tener un tiempo límite entero entre 60 y 14,400 segundos.");
+      const accessIds = await allocateAssignmentIds(requestedTests.length);
       const assignments = requestedTests.map((test, index) => {
         const testId = test.testId ?? test.prueba_id ?? "";
         const seconds = Number(test.timeLimitSeconds ?? test.tiempo_limite_seg ?? 900);
         const order = index + 1;
-        const accessId = assignmentAccessId(test) || newAssignmentId();
+        const accessId = isInterventionId(assignmentAccessId(test)) ? assignmentAccessId(test) : accessIds[index];
         return { prueba_id: testId, orden: order, tiempo_limite_seg: seconds, testId, order, timeLimitSeconds: seconds, asignacion_id: accessId, assignmentId: accessId };
       });
       const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: assignments, tiempo_total_min: totalMinutes }) });
@@ -90,9 +110,13 @@ export async function POST(request: Request) {
       const ownedBatteries = await supabaseRest<Array<{ id: string; nombre: string; pruebas: BatteryAssignment[] }>>(`baterias?id=eq.${encodeURIComponent(body.batteryId)}&reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,nombre,pruebas&limit=1`);
       const ownedBattery = ownedBatteries[0];
       if (!ownedBattery) return jsonError("La batería no existe o no pertenece a este reclutador.", 404);
-      const storedAssignments = Array.isArray(ownedBattery.pruebas) ? ownedBattery.pruebas : [];
+      const storedAssignments = asAssignments(ownedBattery.pruebas);
+      const missingAccessIds = storedAssignments.filter((assignment) => !isInterventionId(assignmentAccessId(assignment))).length;
+      const accessIds = missingAccessIds ? await allocateAssignmentIds(missingAccessIds) : [];
+      let accessIndex = 0;
       const assignments = storedAssignments.map((assignment, index) => {
-        const accessId = assignmentAccessId(assignment) || newAssignmentId();
+        const existingAccessId = assignmentAccessId(assignment);
+        const accessId = isInterventionId(existingAccessId) ? existingAccessId.toUpperCase() : accessIds[accessIndex++];
         return {
           ...assignment,
           prueba_id: assignmentTestId(assignment),
