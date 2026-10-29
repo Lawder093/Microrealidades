@@ -5,12 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { evaluationDimensions, likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
-import { assignmentAccessId, assignmentTestId, batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
+import { assignmentTestId, batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
 
 type SuperBatteryMode = "home" | "recruiter" | "candidate";
 type CandidateStage = "access" | "quiz" | "thanks";
 type DashboardResult = { globalScore?: number | null; dimensions?: Array<{ dimension: string; score: number | null; answered: number; total: number }>; timedOut?: boolean; clinicalResult?: { resultadosPorPrueba?: Array<{ pruebaId: string; porcentaje?: number; banda?: string; interpretacion?: string; interpretacionTecnica?: string }> } };
-type TestLink = { testId: string; name: string; accessId: string; order: number; path: string };
 type DashboardSession = { id: string; codigo: string; bateria_id: string; candidato_nombre?: string; candidato_empresa?: string; estado: string; resultados?: DashboardResult; created_at: string; finalizado_en?: string; baterias?: { nombre?: string; clasificacion_puesto?: string; pruebas?: BatteryAssignment[] } | null };
 type DashboardBattery = { id: string; nombre: string; clasificacion_puesto: string; tiempo_total_min: number; activa: boolean; pruebas?: BatteryAssignment[] };
 
@@ -20,28 +19,6 @@ const hasSupabase = Boolean(supabaseUrl && supabaseAnonKey);
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("es-MX", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
-}
-
-function buildTestLinks(session: Pick<DashboardSession, "codigo" | "baterias">, origin: string): TestLink[] {
-  return (session.baterias?.pruebas ?? []).map((assignment, index) => {
-    const testId = assignmentTestId(assignment);
-    const test = batteryTestCatalog.find((candidate) => candidate.id === testId);
-    const accessId = assignmentAccessId(assignment);
-    return {
-      testId,
-      name: test?.name ?? testId,
-      accessId,
-      order: assignment.orden ?? assignment.order ?? index + 1,
-      path: `${origin}/evaluacion/${encodeURIComponent(session.codigo)}?prueba=${encodeURIComponent(accessId)}`,
-    };
-  }).filter((link) => Boolean(link.testId && link.accessId));
-}
-
-function assignmentLabel(assignment: BatteryAssignment) {
-  const testId = assignmentTestId(assignment);
-  const test = batteryTestCatalog.find((candidate) => candidate.id === testId);
-  const accessId = assignmentAccessId(assignment);
-  return accessId ? `${accessId} · ${test?.name ?? testId}` : "ID pendiente al generar la liga";
 }
 
 function CandidateItem({ item, value, onChange }: { item: EvaluationItem; value?: Respuesta; onChange: (answer: Respuesta) => void }) {
@@ -63,12 +40,10 @@ function ResultDetails({ session, onClose }: { session: DashboardSession; onClos
 export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?: string } = {}) {
   const searchParams = useSearchParams();
   const resolvedCandidateCode = initialCandidateCode?.trim().toUpperCase() ?? searchParams.get("codigo")?.trim().toUpperCase() ?? "";
-  const resolvedCandidateTestAccessId = searchParams.get("prueba")?.trim().toUpperCase() ?? "";
   const [mode, setMode] = useState<SuperBatteryMode>(resolvedCandidateCode ? "candidate" : "home");
   const [candidateStage, setCandidateStage] = useState<CandidateStage>("access");
   const [candidateSessionId, setCandidateSessionId] = useState("");
   const [candidateCode, setCandidateCode] = useState(resolvedCandidateCode);
-  const [candidateTestAccessId, setCandidateTestAccessId] = useState(resolvedCandidateTestAccessId);
   const [candidateName, setCandidateName] = useState("");
   const [candidateAge, setCandidateAge] = useState("");
   const [candidateCompany, setCandidateCompany] = useState("");
@@ -91,7 +66,6 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   const [demoCode, setDemoCode] = useState("");
   const [demoSequence, setDemoSequence] = useState(0);
   const [shareLink, setShareLink] = useState("");
-  const [testLinks, setTestLinks] = useState<TestLink[]>([]);
   const [message, setMessage] = useState("");
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -121,7 +95,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     setSessions(nextSessions);
     const pendingSession = nextSessions.find((session) => session.estado !== "completado" && session.estado !== "bloqueado");
     setShareLink(pendingSession ? `${window.location.origin}/evaluacion/${encodeURIComponent(pendingSession.codigo)}` : "");
-    setTestLinks(pendingSession ? buildTestLinks(pendingSession, window.location.origin) : []);
+    setDemoCode(pendingSession?.codigo ?? "");
   }, [recruiterToken]);
 
   useEffect(() => {
@@ -188,7 +162,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     setRecruiterError("");
     if (!hasSupabase) {
       setMode("recruiter");
-      setBatteries([{ id: defaultBattery.id, nombre: defaultBattery.name, clasificacion_puesto: "custom", tiempo_total_min: defaultBattery.totalMinutes, activa: true, pruebas: defaultBattery.tests.map((test) => ({ ...test, testId: test.testId, prueba_id: test.testId, orden: test.order, asignacion_id: `IB-${String(test.order).padStart(4, "0")}`, assignmentId: `IB-${String(test.order).padStart(4, "0")}` })) }]);
+      setBatteries([{ id: defaultBattery.id, nombre: defaultBattery.name, clasificacion_puesto: "custom", tiempo_total_min: defaultBattery.totalMinutes, activa: true, pruebas: defaultBattery.tests.map((test) => ({ prueba_id: test.testId, orden: test.order, tiempo_limite_seg: test.timeLimitSeconds })) }]);
       setRecruiterError("Modo demo activo: configura Supabase para autenticar reclutadores.");
       return;
     }
@@ -219,7 +193,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
       return;
     }
     if (!hasSupabase || !recruiterToken) {
-      const demoAssignments: BatteryAssignment[] = selectedTestIds.map((testId, index) => ({ testId, prueba_id: testId, order: index + 1, orden: index + 1, assignmentId: `IB-${String(index + 1).padStart(4, "0")}`, asignacion_id: `IB-${String(index + 1).padStart(4, "0")}` }));
+      const demoAssignments: BatteryAssignment[] = selectedTestIds.map((testId, index) => ({ prueba_id: testId, orden: index + 1, tiempo_limite_seg: 900 }));
       const demoBattery: DashboardBattery = { id: `demo-${Date.now()}`, nombre: batteryName.trim() || defaultBattery.name, clasificacion_puesto: batteryClassification, tiempo_total_min: Number(batteryMinutes) || defaultBattery.totalMinutes, activa: true, pruebas: demoAssignments };
       setBatteries((current) => [demoBattery, ...current]);
       setMessage("Batería creada en modo demo.");
@@ -241,25 +215,17 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     setRecruiterError("");
     setIsGeneratingLink(true);
     if (!hasSupabase || !recruiterToken) {
-      const code = `SB01-DEMO${String(demoSequence + 1).padStart(4, "0")}`;
-      const demoBattery = batteries.find((battery) => battery.id === batteryId);
-      const demoAssignments: BatteryAssignment[] = demoBattery?.pruebas ?? selectedTestIds.map((testId, index) => ({ testId, prueba_id: testId, order: index + 1, orden: index + 1, assignmentId: `IB-${String(index + 1).padStart(4, "0")}`, asignacion_id: `IB-${String(index + 1).padStart(4, "0")}` }));
+      const code = `IB-${String(demoSequence + 1).padStart(4, "0")}`;
       setDemoSequence((current) => current + 1);
       setDemoCode(code);
       setShareLink(`${window.location.origin}/evaluacion/${encodeURIComponent(code)}`);
-      setTestLinks(demoAssignments.map((assignment, index) => {
-        const testId = assignmentTestId(assignment);
-        const test = batteryTestCatalog.find((candidate) => candidate.id === testId);
-        const accessId = assignmentAccessId(assignment) || `IB-${String(index + 1).padStart(4, "0")}`;
-        return { testId, name: test?.name ?? testId, accessId, order: index + 1, path: `${window.location.origin}/evaluacion/${encodeURIComponent(code)}?prueba=${encodeURIComponent(accessId)}` };
-      }));
       setMessage("Código de prueba generado. No abre una sesión real.");
       setIsGeneratingLink(false);
       return;
     }
     try {
       const response = await fetch("/api/evaluaciones/recruiter", { method: "POST", headers: { Authorization: `Bearer ${recruiterToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "create-session", batteryId }) });
-      const data = await response.json() as { session?: DashboardSession; sharePath?: string; testLinks?: TestLink[]; error?: string };
+      const data = await response.json() as { session?: DashboardSession; sharePath?: string; error?: string };
       if (response.status === 401) {
         setRecruiterToken("");
         setRecruiterError("La sesión del reclutador expiró. Inicia sesión nuevamente.");
@@ -270,10 +236,9 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
         const code = createdSession.codigo;
         const link = `${window.location.origin}${data.sharePath ?? `/evaluacion/${encodeURIComponent(code)}`}`;
         setShareLink(link);
-        const links = data.testLinks ?? buildTestLinks(createdSession, window.location.origin);
-        setTestLinks(links.map((testLink) => ({ ...testLink, path: testLink.path.startsWith("http") ? testLink.path : `${window.location.origin}${testLink.path}` })));
         setBatteries((current) => current.map((battery) => battery.id === batteryId ? { ...battery, pruebas: createdSession.baterias?.pruebas } : battery));
-        setMessage(`Liga generada: ${code}. Ya puedes copiarla y enviarla.`);
+        setDemoCode(code);
+        setMessage(`Código único de aplicación: ${code}. La liga da acceso a toda la batería; compártela con el candidato.`);
       } else {
         const errorMessage = data.error ?? `No se pudo generar la liga (HTTP ${response.status}).`;
         setRecruiterError(errorMessage);
@@ -301,9 +266,8 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     await copyLink(shareLink);
   }
 
-  async function copyShareLinkForCode(code: string, accessId?: string) {
-    const query = accessId ? `?prueba=${encodeURIComponent(accessId)}` : "";
-    const link = `${window.location.origin}/evaluacion/${encodeURIComponent(code)}${query}`;
+  async function copyShareLinkForCode(code: string) {
+    const link = `${window.location.origin}/evaluacion/${encodeURIComponent(code)}`;
     setShareLink(link);
     await copyLink(link);
   }
@@ -338,7 +302,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     }
     if (hasSupabase) {
       try {
-        const response = await fetch("/api/evaluaciones/sesion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", code: candidateCode, testAccessId: candidateTestAccessId || undefined, name: candidateName, age: Number(candidateAge), company: candidateCompany }) });
+        const response = await fetch("/api/evaluaciones/sesion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", code: candidateCode, name: candidateName, age: Number(candidateAge), company: candidateCompany }) });
         const data = await response.json() as { sessionId?: string; error?: string; battery?: { nombre?: string; pruebas?: Array<{ testId?: string; prueba_id?: string }>; tiempo_total_min?: number } };
         if (!response.ok || !data.sessionId) {
           setCandidateError(data.error ?? "No se pudo iniciar la sesión.");
@@ -395,7 +359,6 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   function resetCandidate() {
     setCandidateStage("access");
     setCandidateCode("");
-    setCandidateTestAccessId("");
     setCandidateSessionId("");
     setCandidateName("");
     setCandidateAge("");
@@ -412,8 +375,8 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
       {!hasSupabase && <DemoNotice />}
       <div className="super-battery-header"><div><p className="section-label">Vidovic 01 · herramienta de reclutamiento</p><h2 id="super-battery-title">Super batería <em>01.</em></h2><p>Una matriz configurable para observar el perfil de terapeuta sin convertir una respuesta en una decisión automática.</p></div><div className="super-battery-badge"><span>Estado</span><strong>{hasSupabase ? "Conectable" : "Demo"}</strong><small>Supabase · Auth · DB · Storage</small></div></div>
       {mode === "home" && <div className="super-battery-entry-grid"><button type="button" className="super-battery-entry pink" onClick={() => setMode("recruiter")}><span>01 · Acceso privado</span><h3>Entrar como<br /><em>reclutador.</em></h3><p>Crea baterías, genera enlaces privados y revisa resultados individuales.</p><strong>Acceder al dashboard ↗</strong></button><button type="button" className="super-battery-entry blue" onClick={() => setMode("candidate")} aria-label="Abrir formulario de candidatura"><span>02 · Aplicación</span><h3>La candidatura<br /><em>recibe un enlace.</em></h3><p>Abre el formulario directo e introduce el código que te envió el reclutador.</p><strong>Acceder al formulario ↗</strong></button></div>}
-      {mode === "recruiter" && <div className="super-battery-panel"><button className="super-battery-back" type="button" onClick={() => setMode("home")}>↖ Volver</button>{!recruiterToken && hasSupabase ? <form className="super-battery-login" onSubmit={recruiterLogin}><p className="section-label">Acceso protegido</p><h3>Espacio de <em>reclutamiento.</em></h3><label>Email<input type="email" value={recruiterEmail} onChange={(event) => setRecruiterEmail(event.target.value)} required autoComplete="email" /></label><label>Contraseña<input type="password" value={recruiterPassword} onChange={(event) => setRecruiterPassword(event.target.value)} required autoComplete="current-password" /></label><button className="super-battery-action" type="submit">Iniciar sesión ↗</button>{recruiterError && <p className="super-battery-error">{recruiterError}</p>}</form> : <div className="super-battery-dashboard"><div className="super-battery-dashboard-head"><div><p className="section-label">Dashboard de reclutador</p><h3>Configurar una <em>batería.</em></h3><small>Las sesiones se actualizan automáticamente cada 10 segundos.</small></div><button className="super-battery-back" type="button" onClick={() => { setRecruiterToken(""); setMode("home"); }}>Cerrar sesión</button></div><div className="super-battery-admin-grid"><section><p className="section-label">Nueva batería</p><label>Preset auditable<select value={selectedPresetId} onChange={(event) => selectPreset(event.target.value)}>{batteryPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}</select></label><label>Nombre<input value={batteryName} onChange={(event) => setBatteryName(event.target.value)} /></label><label>Clasificación de puesto<select value={batteryClassification} onChange={(event) => setBatteryClassification(event.target.value)}>{["1-A", "1-B", "2-A", "2-B", "3-A", "3-B", "3-C", "3-D", "PSIC-CLIN-INF", "custom"].map((value) => <option key={value} value={value}>{value}</option>)}</select></label><label>Tiempo total (minutos)<input type="number" min="1" max="240" value={batteryMinutes} onChange={(event) => setBatteryMinutes(event.target.value)} /></label><button className="super-battery-action" type="button" onClick={createBattery}>Crear batería ↗</button>{message && <p className="super-battery-feedback">{message}</p>}{shareLink && <div className="super-battery-share"><label>Liga de batería para candidato<input readOnly value={shareLink} /></label><button className="super-battery-small-action" type="button" onClick={copyShareLink}>Copiar enlace completo ↗</button>{testLinks.length > 0 && <div className="super-battery-test-links"><p className="section-label">IDs únicos por prueba</p><p className="super-battery-share-note">Comparte la liga completa o una liga específica de prueba.</p><ul>{testLinks.map((testLink) => <li key={testLink.accessId}><div><strong>{testLink.order}. {testLink.name}</strong><code>{testLink.accessId}</code><input readOnly value={testLink.path} aria-label={`Liga de ${testLink.name}`} /></div><button className="super-battery-small-action" type="button" onClick={() => copyLink(testLink.path)}>Copiar liga de prueba ↗</button></li>)}</ul></div>}</div>}</section><section><p className="section-label">Banco configurable</p><h4>{selectedTestIds.length} pruebas · {getBatteryItems(selectedTestIds).length} ítems</h4><p>La batería clínica infantil usa reactivos auditables y solo aparece en este dashboard.</p><ul>{batteryTestCatalog.map((test) => <li key={test.id}><label className="super-battery-test-toggle"><input type="checkbox" checked={selectedTestIds.includes(test.id)} onChange={() => setSelectedTestIds((current) => current.includes(test.id) ? current.filter((id) => id !== test.id) : [...current, test.id])} /><span>{test.name}</span><small>{test.itemIds.length} ítems</small></label></li>)}</ul></section></div><div className="super-battery-list"><div className="super-battery-list-head"><h4>Baterías disponibles</h4><span>{batteries.length}</span></div>{batteries.length ? batteries.map((battery) => <article key={battery.id}><div><strong>{battery.nombre}</strong><small>{battery.clasificacion_puesto} · {battery.tiempo_total_min} min</small>{(battery.pruebas ?? []).map((assignment, index) => <small className="super-battery-battery-test-id" key={`${assignmentTestId(assignment)}-${index}`}>{assignmentLabel(assignment)}</small>)}</div><button className="super-battery-small-action" type="button" disabled={isGeneratingLink} onClick={() => void createCode(battery.id)}>{isGeneratingLink ? "Generando…" : "Generar liga para candidato ↗"}</button></article>) : <p>Aún no hay baterías en este espacio.</p>}</div><div className="super-battery-list"><div className="super-battery-list-head"><h4>Sesiones y resultados</h4><button className="super-battery-small-action" type="button" onClick={() => loadDashboard()}>Actualizar ↻</button></div>{demoCode && <p className="super-battery-feedback">Código demo: <strong>{demoCode}</strong></p>}{sessions.length ? sessions.map((session) => <article key={session.id}><div><strong>{session.codigo}</strong><small>{session.baterias?.nombre ?? "Batería"} · {session.candidato_nombre ?? "Sin nombre capturado"} · {session.estado} · {formatDate(session.created_at)}</small>{session.estado === "completado" && <p className="super-battery-feedback">Resultados recibidos · Perfil descriptivo: <strong>{session.resultados?.globalScore ?? "—"}/100</strong>{session.resultados?.dimensions ? ` · ${session.resultados.dimensions.length} dimensiones` : ""}</p>}</div><div>{session.estado !== "completado" && <button className="super-battery-small-action" type="button" onClick={() => copyShareLinkForCode(session.codigo)}>Copiar enlace ↗</button>}{session.estado === "completado" && <><button className="super-battery-small-action" type="button" onClick={() => setSelectedResultSessionId(session.id)}>Ver resultados ↗</button><button className="super-battery-small-action" type="button" onClick={() => downloadPdf(session.id)}>Descargar PDF ↗</button></>}</div></article>) : <p>No hay sesiones registradas todavía.</p>}{selectedResultSession && <ResultDetails session={selectedResultSession} onClose={() => setSelectedResultSessionId("")} />}</div></div>}</div>}
-      {mode === "candidate" && <div className="super-battery-panel"><button className="super-battery-back" type="button" onClick={() => setMode("home")}>↖ Volver</button>{candidateStage === "access" && <form className="super-battery-candidate-form" onSubmit={startCandidate}><div><p className="section-label">Enlace privado · aplicación</p><h3>Tu aplicación <em>comienza aquí.</em></h3><p>Este enlace fue generado por el reclutador. Solo se conservarán los datos necesarios para identificar la sesión.</p></div><label>Código de aplicación<input value={candidateCode} onChange={(event) => setCandidateCode(event.target.value.toUpperCase())} placeholder="SB01-XXXXXXXX" required /></label><label>Nombre<input value={candidateName} onChange={(event) => setCandidateName(event.target.value)} required /></label><label>Edad<input type="number" min="14" max="100" value={candidateAge} onChange={(event) => setCandidateAge(event.target.value)} required /></label><label>Empresa a la que aplicas<input value={candidateCompany} onChange={(event) => setCandidateCompany(event.target.value)} /></label><button className="super-battery-action" type="submit">Comenzar evaluación ↗</button>{candidateError && <p className="super-battery-error">{candidateError}</p>}</form>}{candidateStage === "quiz" && <div className="super-battery-quiz" onContextMenu={(event) => event.preventDefault()} onCopy={(event) => event.preventDefault()} onPaste={(event) => event.preventDefault()}><div className="super-battery-quiz-head"><div><p className="section-label">{candidateBatteryName} · {candidateCode}</p><h3>Responde desde tu <em>experiencia.</em></h3></div><div><strong>{Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}</strong><small>tiempo restante</small></div></div><div className="super-battery-progress"><span style={{ width: `${progress}%` }} /></div>{evaluationDimensions.map((dimension) => <section key={dimension.id} className="super-battery-dimension"><p className="section-label">{dimension.shortLabel}</p><h4>{dimension.label}</h4>{candidateItems.filter((item) => item.dimension === dimension.id).map((item, index) => <article key={item.id}><small>{String(index + 1).padStart(2, "0")} · {item.type}</small><h5>{item.prompt}</h5><CandidateItem item={item} value={candidateResponses[item.id]} onChange={(answer) => setCandidateResponses((current) => ({ ...current, [item.id]: answer }))} /></article>)}</section>)}<div className="super-battery-quiz-foot"><p>{answered}/{candidateItems.length} respuestas</p><button className="super-battery-action" type="button" disabled={isSubmitting} onClick={() => void finishCandidate()}>{isSubmitting ? "Guardando…" : "Enviar aplicación ↗"}</button></div>{candidateError && <p className="super-battery-error">{candidateError}</p>}</div>}{candidateStage === "thanks" && <div className="super-battery-thanks"><span>✳</span><h3>Gracias por <em>participar.</em></h3><p>{message || "Tu aplicación fue recibida."}</p><small>El equipo responsable revisará la información junto con el resto del proceso. Esta herramienta no toma decisiones automáticas.</small><button className="super-battery-action" type="button" onClick={resetCandidate}>Cerrar sesión de aplicación</button></div>}</div>}
+{mode === "recruiter" && <div className="super-battery-panel"><button className="super-battery-back" type="button" onClick={() => setMode("home")}>↖ Volver</button>{!recruiterToken && hasSupabase ? <form className="super-battery-login" onSubmit={recruiterLogin}><p className="section-label">Acceso protegido</p><h3>Espacio de <em>reclutamiento.</em></h3><label>Email<input type="email" value={recruiterEmail} onChange={(event) => setRecruiterEmail(event.target.value)} required autoComplete="email" /></label><label>Contraseña<input type="password" value={recruiterPassword} onChange={(event) => setRecruiterPassword(event.target.value)} required autoComplete="current-password" /></label><button className="super-battery-action" type="submit">Iniciar sesión ↗</button>{recruiterError && <p className="super-battery-error">{recruiterError}</p>}</form> : <div className="super-battery-dashboard"><div className="super-battery-dashboard-head"><div><p className="section-label">Dashboard de reclutador</p><h3>Configurar una <em>batería.</em></h3><small>Crea una aplicación por candidato; cada código es de un solo uso.</small></div><button className="super-battery-back" type="button" onClick={() => { setRecruiterToken(""); setMode("home"); }}>Cerrar sesión</button></div><div className="super-battery-admin-grid"><section><p className="section-label">Nueva batería</p><label>Preset auditable<select value={selectedPresetId} onChange={(event) => selectPreset(event.target.value)}>{batteryPresets.map((preset) => <option key={preset.id} value={preset.id}>{preset.name}</option>)}</select></label><label>Nombre<input value={batteryName} onChange={(event) => setBatteryName(event.target.value)} /></label><label>Clasificación de puesto<select value={batteryClassification} onChange={(event) => setBatteryClassification(event.target.value)}>{["1-A", "1-B", "2-A", "2-B", "3-A", "3-B", "3-C", "3-D", "PSIC-CLIN-INF", "custom"].map((value) => <option key={value} value={value}>{value}</option>)}</select></label><label>Tiempo total (minutos)<input type="number" min="1" max="240" value={batteryMinutes} onChange={(event) => setBatteryMinutes(event.target.value)} /></label><button className="super-battery-action" type="button" onClick={createBattery}>Crear batería ↗</button>{message && <p className="super-battery-feedback">{message}</p>}{shareLink && <div className="super-battery-share"><p className="super-battery-share-note">Código único de aplicación (batería completa): <strong>{demoCode}</strong>. Comparte una sola liga para responder todos sus tests.</p><label>Liga para el candidato<input readOnly value={shareLink} /></label><button className="super-battery-small-action" type="button" onClick={copyShareLink}>Copiar liga del candidato ↗</button></div>}</section><section><p className="section-label">Banco configurable</p><h4>{selectedTestIds.length} pruebas · {getBatteryItems(selectedTestIds).length} ítems</h4><p>La batería clínica infantil usa reactivos auditables y solo aparece en este dashboard.</p><ul>{batteryTestCatalog.map((test) => <li key={test.id}><label className="super-battery-test-toggle"><input type="checkbox" checked={selectedTestIds.includes(test.id)} onChange={() => setSelectedTestIds((current) => current.includes(test.id) ? current.filter((id) => id !== test.id) : [...current, test.id])} /><span>{test.name}</span><small>{test.itemIds.length} ítems</small></label></li>)}</ul></section></div><div className="super-battery-list"><div className="super-battery-list-head"><h4>Baterías disponibles</h4><span>{batteries.length}</span></div>{batteries.length ? batteries.map((battery) => <article key={battery.id}><div><strong>{battery.nombre}</strong><small>{battery.clasificacion_puesto} · {battery.tiempo_total_min} min</small></div><button className="super-battery-small-action" type="button" disabled={isGeneratingLink} onClick={() => void createCode(battery.id)}>{isGeneratingLink ? "Generando…" : "Generar liga para candidato ↗"}</button></article>) : <p>Aún no hay baterías en este espacio.</p>}</div><div className="super-battery-list"><div className="super-battery-list-head"><h4>Sesiones y resultados</h4><button className="super-battery-small-action" type="button" onClick={() => loadDashboard()}>Actualizar ↻</button></div>{demoCode && <p className="super-battery-feedback">Código de batería: <strong>{demoCode}</strong></p>}{sessions.length ? sessions.map((session) => <article key={session.id}><div><strong>{session.codigo}</strong><small>{session.baterias?.nombre ?? "Batería"} · {session.candidato_nombre ?? "Sin nombre capturado"} · {session.estado} · {formatDate(session.created_at)}</small>{session.estado === "completado" && <p className="super-battery-feedback">Resultados recibidos · Perfil descriptivo: <strong>{session.resultados?.globalScore ?? "—"}/100</strong>{session.resultados?.dimensions ? ` · ${session.resultados.dimensions.length} dimensiones` : ""}</p>}</div><div>{session.estado !== "completado" && <button className="super-battery-small-action" type="button" onClick={() => copyShareLinkForCode(session.codigo)}>Copiar liga ↗</button>}{session.estado === "completado" && <><button className="super-battery-small-action" type="button" onClick={() => setSelectedResultSessionId(session.id)}>Ver resultados ↗</button><button className="super-battery-small-action" type="button" onClick={() => downloadPdf(session.id)}>Descargar PDF ↗</button></>}</div></article>) : <p>No hay sesiones registradas todavía.</p>}{selectedResultSession && <ResultDetails session={selectedResultSession} onClose={() => setSelectedResultSessionId("")} />}</div></div>}</div>}
+      {mode === "candidate" && <div className="super-battery-panel"><button className="super-battery-back" type="button" onClick={() => setMode("home")}>↖ Volver</button>{candidateStage === "access" && <form className="super-battery-candidate-form" onSubmit={startCandidate}><div><p className="section-label">Enlace privado · aplicación</p><h3>Tu aplicación <em>comienza aquí.</em></h3><p>Este enlace fue generado por el reclutador. Solo se conservarán los datos necesarios para identificar la sesión.</p></div><label>Código de aplicación<input value={candidateCode} onChange={(event) => setCandidateCode(event.target.value.toUpperCase())} placeholder="IB-0001" maxLength={7} required /></label><label>Nombre<input value={candidateName} onChange={(event) => setCandidateName(event.target.value)} required /></label><label>Edad<input type="number" min="14" max="100" value={candidateAge} onChange={(event) => setCandidateAge(event.target.value)} required /></label><label>Empresa a la que aplicas<input value={candidateCompany} onChange={(event) => setCandidateCompany(event.target.value)} /></label><button className="super-battery-action" type="submit">Comenzar evaluación ↗</button>{candidateError && <p className="super-battery-error">{candidateError}</p>}</form>}{candidateStage === "quiz" && <div className="super-battery-quiz" onContextMenu={(event) => event.preventDefault()} onCopy={(event) => event.preventDefault()} onPaste={(event) => event.preventDefault()}><div className="super-battery-quiz-head"><div><p className="section-label">{candidateBatteryName} · {candidateCode}</p><h3>Responde desde tu <em>experiencia.</em></h3></div><div><strong>{Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}</strong><small>tiempo restante</small></div></div><div className="super-battery-progress"><span style={{ width: `${progress}%` }} /></div>{evaluationDimensions.map((dimension) => <section key={dimension.id} className="super-battery-dimension"><p className="section-label">{dimension.shortLabel}</p><h4>{dimension.label}</h4>{candidateItems.filter((item) => item.dimension === dimension.id).map((item, index) => <article key={item.id}><small>{String(index + 1).padStart(2, "0")} · {item.type}</small><h5>{item.prompt}</h5><CandidateItem item={item} value={candidateResponses[item.id]} onChange={(answer) => setCandidateResponses((current) => ({ ...current, [item.id]: answer }))} /></article>)}</section>)}<div className="super-battery-quiz-foot"><p>{answered}/{candidateItems.length} respuestas</p><button className="super-battery-action" type="button" disabled={isSubmitting} onClick={() => void finishCandidate()}>{isSubmitting ? "Guardando…" : "Enviar aplicación ↗"}</button></div>{candidateError && <p className="super-battery-error">{candidateError}</p>}</div>}{candidateStage === "thanks" && <div className="super-battery-thanks"><span>✳</span><h3>Gracias por <em>participar.</em></h3><p>{message || "Tu aplicación fue recibida."}</p><small>El equipo responsable revisará la información junto con el resto del proceso. Esta herramienta no toma decisiones automáticas.</small><button className="super-battery-action" type="button" onClick={resetCandidate}>Cerrar sesión de aplicación</button></div>}</div>}
     </section>
   );
 }

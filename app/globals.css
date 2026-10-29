@@ -857,21 +857,13 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  .super-battery-list article>div{display:grid;gap:6px}
  .super-battery-list article strong{color:#fff;font-weight:500}
  .super-battery-list article small{color:#ffffff80;font:10px monospace;text-transform:uppercase;letter-spacing:.05em}
- .super-battery-battery-test-id{display:block;color:#ffffffc0!important;font:10px monospace!important;letter-spacing:.05em;text-transform:uppercase}
  .super-battery-list article .super-battery-small-action{color:#ffffffd0;border-color:#ffffff80}
  .super-battery-list article .super-battery-small-action:disabled{opacity:.5;cursor:wait}
  .super-battery-list article .super-battery-small-action:hover{color:var(--yellow);border-color:var(--yellow)}
  .super-battery-list>p{color:#ffffff90;font-size:13px}
  .super-battery-small-action{padding:0;border:0;border-bottom:1px solid #10111480;background:transparent;color:#10111490;font:10px monospace;text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
  .super-battery-small-action:hover{color:var(--pink);border-color:var(--pink)}
- .super-battery-test-links{margin-top:25px;padding-top:18px;border-top:1px solid #10111425}
  .super-battery-share-note{margin:8px 0 14px!important;color:#10111490!important;font-size:12px!important}
- .super-battery-test-links ul{display:grid;gap:1px;margin:0;padding:0;background:#10111425;list-style:none}
- .super-battery-test-links li{display:flex;align-items:end;justify-content:space-between;gap:18px;padding:13px;background:#eeeae1}
- .super-battery-test-links li>div{display:grid;min-width:0;gap:5px}
- .super-battery-test-links strong{font-size:13px;font-weight:400}
- .super-battery-test-links code{color:#10111480;font:10px monospace;letter-spacing:.06em}
- .super-battery-test-links input{width:100%;min-width:0;margin:0;padding:4px 0;border:0;border-bottom:1px solid #10111425;background:transparent;color:#10111490;font:10px monospace;outline:none;overflow:hidden;text-overflow:ellipsis}
  .super-battery-candidate-form{max-width:700px;margin:60px auto 70px;padding:27px;background:#e4e1d8}
  .super-battery-candidate-form>div>p:not(.section-label){max-width:530px;color:#101114a5;font-size:14px;line-height:1.5}
  .super-battery-quiz{margin-top:60px}
@@ -937,8 +929,6 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
    .super-battery-likert small{font-size:8px}
    .super-battery-quiz-foot,.super-battery-list>article{display:block}
    .super-battery-quiz-foot .super-battery-action,.super-battery-list article .super-battery-small-action{margin-top:18px}
-   .super-battery-test-links li{display:block}
-   .super-battery-test-links li .super-battery-small-action{margin-top:12px}
    .super-battery-results{padding:20px 0;background:transparent}
    .super-battery-result-dimensions{grid-template-columns:1fr}
    .super-battery-results-head h4{font-size:24px}

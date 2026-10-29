@@ -1,5 +1,5 @@
 import type { EvaluationItem } from "@/lib/evaluation-items";
-import { assignmentAccessId, assignmentTestId, calculateConfiguredBatteryResult, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
+import { assignmentTestId, calculateConfiguredBatteryResult, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { supabaseConfigurationError, supabaseIsConfigured, supabaseRest, supabaseStorageUpload } from "@/lib/supabase-rest";
 import { createEvaluationPdf } from "@/lib/evaluation-pdf";
@@ -87,7 +87,6 @@ export async function POST(request: Request) {
     action?: "start" | "complete" | "security-event";
     code?: string;
     sessionId?: string;
-    testAccessId?: string;
     name?: string;
     age?: number;
     company?: string;
@@ -107,11 +106,6 @@ export async function POST(request: Request) {
   try {
     const { session, hasResumeColumn } = await getSessionByCode(code);
     if (!session) return jsonError("Código no encontrado.", 404);
-    const testAccessId = typeof body.testAccessId === "string" ? body.testAccessId.trim().toUpperCase() : "";
-    if (testAccessId) {
-      const validAccessId = session.baterias?.pruebas?.some((assignment) => assignmentAccessId(assignment).toUpperCase() === testAccessId);
-      if (!validAccessId) return jsonError("El ID de prueba no pertenece a esta aplicación.", 404);
-    }
     const cookieName = resumeCookieName(code);
     const cookieToken = readCookie(request, cookieName);
     if (session.estado === "bloqueado") return jsonError("Esta sesión está bloqueada.", 423);

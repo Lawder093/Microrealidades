@@ -1,4 +1,4 @@
-import { assignmentAccessId, assignmentTestId, batteryTestCatalog, defaultBattery, type BatteryAssignment } from "@/lib/psychometric-battery";
+import { assignmentTestId, batteryTestCatalog, defaultBattery, type BatteryAssignment } from "@/lib/psychometric-battery";
 import { supabaseConfigurationError, supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
 
 function jsonError(message: string, status = 400) {
@@ -27,36 +27,26 @@ function asAssignments(value: unknown) {
     : [];
 }
 
-function isInterventionId(value: string) {
-  return /^IB-\d+$/i.test(value);
-}
-
-async function allocateAssignmentIds(quantity: number) {
-  const batteries = await supabaseRest<Array<{ pruebas: unknown }>>("baterias?select=pruebas");
+async function allocateBatteryCode() {
+  const [sessions, batteries] = await Promise.all([
+    supabaseRest<Array<{ codigo: string }>>("sesiones_evaluacion?select=codigo&order=created_at.desc&limit=5000"),
+    supabaseRest<Array<{ pruebas: unknown }>>("baterias?select=pruebas&limit=5000"),
+  ]);
   let highest = 0;
+  for (const session of sessions) {
+    const match = /^IB-(\d+)$/i.exec(session.codigo);
+    const current = match ? Number(match[1]) : 0;
+    if (Number.isSafeInteger(current)) highest = Math.max(highest, current);
+  }
   for (const battery of batteries) {
     for (const assignment of asAssignments(battery.pruebas)) {
-      const match = /^IB-(\d+)$/i.exec(assignmentAccessId(assignment));
+      const legacyId = assignment.asignacion_id ?? assignment.assignmentId ?? "";
+      const match = /^IB-(\d+)$/i.exec(legacyId);
       const current = match ? Number(match[1]) : 0;
       if (Number.isSafeInteger(current)) highest = Math.max(highest, current);
     }
   }
-  return Array.from({ length: quantity }, (_, index) => `IB-${String(highest + index + 1).padStart(4, "0")}`);
-}
-
-function testLinks(code: string, assignments: BatteryAssignment[]) {
-  return assignments.map((assignment, index) => {
-    const testId = assignmentTestId(assignment);
-    const catalogTest = batteryTestCatalog.find((test) => test.id === testId);
-    const accessId = assignmentAccessId(assignment);
-    return {
-      testId,
-      name: catalogTest?.name ?? testId,
-      accessId,
-      order: assignment.orden ?? assignment.order ?? index + 1,
-      path: `/evaluacion/${encodeURIComponent(code)}?prueba=${encodeURIComponent(accessId)}`,
-    };
-  }).filter((link) => Boolean(link.testId && link.accessId));
+  return `IB-${String(highest + 1).padStart(4, "0")}`;
 }
 
 export async function GET(request: Request) {
@@ -95,13 +85,11 @@ export async function POST(request: Request) {
         return !Number.isInteger(seconds) || seconds < 60 || seconds > 14400;
       });
       if (invalidTimeLimit) return jsonError("Cada prueba debe tener un tiempo límite entero entre 60 y 14,400 segundos.");
-      const accessIds = await allocateAssignmentIds(requestedTests.length);
       const assignments = requestedTests.map((test, index) => {
         const testId = test.testId ?? test.prueba_id ?? "";
         const seconds = Number(test.timeLimitSeconds ?? test.tiempo_limite_seg ?? 900);
         const order = index + 1;
-        const accessId = isInterventionId(assignmentAccessId(test)) ? assignmentAccessId(test) : accessIds[index];
-        return { prueba_id: testId, orden: order, tiempo_limite_seg: seconds, testId, order, timeLimitSeconds: seconds, asignacion_id: accessId, assignmentId: accessId };
+        return { prueba_id: testId, orden: order, tiempo_limite_seg: seconds };
       });
       const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: assignments, tiempo_total_min: totalMinutes }) });
       return Response.json({ battery: battery[0] });
@@ -111,24 +99,16 @@ export async function POST(request: Request) {
       const ownedBattery = ownedBatteries[0];
       if (!ownedBattery) return jsonError("La batería no existe o no pertenece a este reclutador.", 404);
       const storedAssignments = asAssignments(ownedBattery.pruebas);
-      const missingAccessIds = storedAssignments.filter((assignment) => !isInterventionId(assignmentAccessId(assignment))).length;
-      const accessIds = missingAccessIds ? await allocateAssignmentIds(missingAccessIds) : [];
-      let accessIndex = 0;
       const assignments = storedAssignments.map((assignment, index) => {
-        const existingAccessId = assignmentAccessId(assignment);
-        const accessId = isInterventionId(existingAccessId) ? existingAccessId.toUpperCase() : accessIds[accessIndex++];
         return {
-          ...assignment,
           prueba_id: assignmentTestId(assignment),
-          testId: assignmentTestId(assignment),
           orden: assignment.orden ?? assignment.order ?? index + 1,
-          order: assignment.order ?? assignment.orden ?? index + 1,
-          asignacion_id: accessId,
-          assignmentId: accessId,
+          tiempo_limite_seg: assignment.tiempo_limite_seg ?? assignment.timeLimitSeconds ?? 900,
         };
       });
       if (!assignments.length) return jsonError("La batería no tiene pruebas asignadas.");
-      if (assignments.some((assignment, index) => assignmentAccessId(storedAssignments[index]) !== assignmentAccessId(assignment))) {
+      let nextCode = await allocateBatteryCode();
+      if (JSON.stringify(assignments) !== JSON.stringify(storedAssignments)) {
         await supabaseRest(`baterias?id=eq.${encodeURIComponent(body.batteryId)}&reclutador_id=eq.${encodeURIComponent(user.id)}`, {
           method: "PATCH",
           headers: { Prefer: "return=minimal" },
@@ -136,12 +116,13 @@ export async function POST(request: Request) {
         });
       }
       for (let attempt = 0; attempt < 3; attempt += 1) {
-        const code = `SB01-${crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+        const code = nextCode;
         try {
           const session = await supabaseRest<Array<Record<string, unknown>>>("sesiones_evaluacion", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ codigo: code, bateria_id: body.batteryId, reclutador_id: user.id, estado: "creado" }) });
-          return Response.json({ session: { ...session[0], baterias: { nombre: ownedBattery.nombre, pruebas: assignments } }, sharePath: `/evaluacion/${encodeURIComponent(code)}`, testLinks: testLinks(code, assignments) });
+          return Response.json({ session: { ...session[0], baterias: { nombre: ownedBattery.nombre, pruebas: assignments } }, sharePath: `/evaluacion/${encodeURIComponent(code)}` });
         } catch (error) {
           if (attempt === 2) throw error;
+          nextCode = await allocateBatteryCode();
         }
       }
     }

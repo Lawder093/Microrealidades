@@ -26,10 +26,6 @@ export function assignmentTestId(assignment: BatteryAssignment) {
   return assignment.testId ?? assignment.prueba_id ?? "";
 }
 
-export function assignmentAccessId(assignment: BatteryAssignment) {
-  return assignment.asignacion_id ?? assignment.assignmentId ?? "";
-}
-
 export type BatteryClassification = "1-A" | "1-B" | "2-A" | "2-B" | "3-A" | "3-B" | "3-C" | "3-D" | "PSIC-CLIN-INF" | "custom";
 
 export const clinicalPsychometricTests: PsychometricTest[] = Object.values(CATALOGO).map((test) => ({
