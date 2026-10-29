@@ -1,7 +1,7 @@
 export type EvaluationDimension = "personality" | "ethics" | "skills" | "therapeutic" | "judgment";
 export type EvaluationItemType = "likert" | "case" | "knowledge";
 
-export type EvaluationOption = { value: string; label: string; score: number };
+export type EvaluationOption = { value: string; label: string; score?: number };
 
 export type EvaluationItem = {
   id: string;
@@ -10,7 +10,6 @@ export type EvaluationItem = {
   prompt: string;
   active: boolean;
   options?: EvaluationOption[];
-  correctValue?: string;
   sourceTestId?: string;
   subarea?: string;
 };

@@ -1,8 +1,9 @@
 import type { EvaluationItem } from "@/lib/evaluation-items";
-import { assignmentTestId, calculateConfiguredBatteryResult, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
+import { assignmentTestId, calculateConfiguredBatteryResult, getBatteryItems, getClinicalTestIds, type BatteryAssignment } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { supabaseConfigurationError, supabaseIsConfigured, supabaseRest, supabaseStorageUpload } from "@/lib/supabase-rest";
 import { createEvaluationPdf } from "@/lib/evaluation-pdf";
+import { buildEvaluationPdfTests, createEvaluationFolioHash } from "@/lib/evaluation-pdf-data";
 
 type SecurityEventType = "refresh" | "tab_change" | "copy" | "paste" | "blur" | "right_click";
 type SessionRow = {
@@ -15,7 +16,7 @@ type SessionRow = {
   candidato_empresa: string | null;
   iniciado_en: string | null;
   reanudacion_token?: string | null;
-  baterias: { nombre: string; pruebas: BatteryAssignment[]; tiempo_total_min: number } | null;
+  baterias: { nombre: string; clasificacion_puesto: string; pruebas: BatteryAssignment[]; tiempo_total_min: number } | null;
 };
 
 const securityEventTypes: SecurityEventType[] = ["refresh", "tab_change", "copy", "paste", "blur", "right_click"];
@@ -44,14 +45,14 @@ function resumeCookie(name: string, token: string) {
 }
 
 async function getSessionByCode(code: string) {
-  const select = "id,codigo,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,reanudacion_token,baterias(nombre,pruebas,tiempo_total_min)";
+  const select = "id,codigo,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,reanudacion_token,baterias(nombre,clasificacion_puesto,pruebas,tiempo_total_min)";
   try {
     const sessions = await supabaseRest<SessionRow[]>(`sesiones_evaluacion?codigo=eq.${encodeURIComponent(code)}&select=${select}&limit=1`);
     return { session: sessions[0], hasResumeColumn: true };
   } catch (error) {
     // Compatibilidad con proyectos que todavía no ejecutaron la migración de reanudación.
     if (!(error instanceof Error && error.message.includes("400"))) throw error;
-    const fallbackSelect = "id,codigo,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,baterias(nombre,pruebas,tiempo_total_min)";
+    const fallbackSelect = "id,codigo,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,baterias(nombre,clasificacion_puesto,pruebas,tiempo_total_min)";
     const sessions = await supabaseRest<SessionRow[]>(`sesiones_evaluacion?codigo=eq.${encodeURIComponent(code)}&select=${fallbackSelect}&limit=1`);
     return { session: sessions[0], hasResumeColumn: false };
   }
@@ -59,7 +60,7 @@ async function getSessionByCode(code: string) {
 
 function responseIsValid(item: EvaluationItem, value: Respuesta) {
   if (item.type === "likert") return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 5;
-  const allowed = item.options?.map((option) => item.correctValue ? option.value : option.score) ?? [];
+  const allowed = item.options?.map((option) => option.value) ?? [];
   return allowed.some((candidate) => candidate === value);
 }
 
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
     age?: number;
     company?: string;
     responses?: Record<string, Respuesta>;
+    testDurationsSeconds?: Record<string, number>;
     timedOut?: boolean;
     type?: SecurityEventType;
     detail?: unknown;
@@ -129,25 +131,42 @@ export async function POST(request: Request) {
 
       const testIds = session.baterias?.pruebas?.map(assignmentTestId).filter(Boolean) ?? [];
       const assignedItems = getBatteryItems(testIds);
-      const timedOut = Boolean(body.timedOut);
-      const serverExpired = session.iniciado_en && session.baterias?.tiempo_total_min
-        ? Date.now() - new Date(session.iniciado_en).getTime() >= session.baterias.tiempo_total_min * 60_000
-        : false;
-      const validationError = validateResponses(assignedItems, body.responses, timedOut || serverExpired);
+      const elapsedMs = session.iniciado_en ? Date.now() - Date.parse(session.iniciado_en) : Number.NaN;
+      const timeLimitMs = (session.baterias?.tiempo_total_min ?? 240) * 60_000;
+      const serverExpired = Number.isFinite(elapsedMs) && elapsedMs >= timeLimitMs;
+      // El cliente solo puede solicitar un envío parcial al llegar al límite,
+      // con un margen pequeño para latencia y desfase del intervalo del navegador.
+      const clientTimedOutAtDeadline = body.timedOut === true && Number.isFinite(elapsedMs) && elapsedMs >= timeLimitMs - 15_000;
+      const timedOut = serverExpired || clientTimedOutAtDeadline;
+      const validationError = validateResponses(assignedItems, body.responses, timedOut);
       if (validationError) return jsonError(validationError);
 
       const results = calculateConfiguredBatteryResult(testIds, body.responses);
       const completedAt = new Date().toISOString();
+      const maximumDurationSeconds = (session.baterias?.tiempo_total_min ?? 240) * 60;
+      const testDurationsSeconds = Object.fromEntries(testIds.flatMap((assignmentId) => {
+        const duration = body.testDurationsSeconds?.[assignmentId];
+        const clinicalTestId = getClinicalTestIds([assignmentId])[0];
+        return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 && duration <= maximumDurationSeconds && clinicalTestId
+          ? [[clinicalTestId, Math.round(duration)]]
+          : [];
+      }));
+      const finalResults = { ...results, timedOut, testDurationsSeconds };
+      const folioHash = await createEvaluationFolioHash({ code, candidateName: session.candidato_nombre, candidateAge: session.candidato_edad, candidateCompany: session.candidato_empresa, completedAt, responses: body.responses, results: finalResults });
       const reportPdf = createEvaluationPdf({
         code,
+        classification: session.baterias?.clasificacion_puesto,
         candidateName: session.candidato_nombre,
         candidateAge: session.candidato_edad,
         candidateCompany: session.candidato_empresa,
         completedAt,
+        folioHash,
         globalScore: results.globalScore,
         dimensions: results.dimensions,
+        executiveSummary: results.clinicalResult?.resumenEjecutivo,
+        tests: buildEvaluationPdfTests(results.clinicalResult?.resultadosPorPrueba, body.responses, testDurationsSeconds),
         interpretations: interpretationEntries(results),
-        timedOut: timedOut || serverExpired,
+        timedOut,
       });
       const pdfPath = `evaluaciones-pdf/${encodeURIComponent(session.id)}.pdf`;
       let pdfHash = "";
@@ -165,16 +184,16 @@ export async function POST(request: Request) {
       const updated = await supabaseRest<Array<{ id: string }>>(`sesiones_evaluacion?id=eq.${encodeURIComponent(session.id)}&estado=eq.en_progreso${resumeFilter}`, {
         method: "PATCH",
         headers: { Prefer: "return=representation" },
-        body: JSON.stringify({ respuestas: body.responses, resultados: { ...results, timedOut: timedOut || serverExpired }, estado: "completado", finalizado_en: completedAt, pdf_path: pdfPath, pdf_hash: pdfHash, ip_fin: requestIp(request) }),
+        body: JSON.stringify({ respuestas: body.responses, resultados: finalResults, estado: "completado", finalizado_en: completedAt, pdf_path: pdfPath, pdf_hash: pdfHash, ip_fin: requestIp(request) }),
       });
       if (!updated?.[0]) return jsonError("La sesión ya fue finalizada por otra solicitud.", 409);
-      return Response.json({ ok: true, results: { ...results, timedOut: timedOut || serverExpired } });
+      return Response.json({ ok: true, results: { ...results, timedOut } });
     }
 
     if (session.estado === "completado") return jsonError("Este código ya fue utilizado.", 409);
     if (session.estado === "en_progreso") {
       if (session.reanudacion_token && cookieToken !== session.reanudacion_token) return jsonError("Esta evaluación ya está activa en otro navegador.", 409);
-      return Response.json({ sessionId: session.id, status: "en_progreso", resumed: true, battery: session.baterias });
+      return Response.json({ sessionId: session.id, status: "en_progreso", resumed: true, startedAt: session.iniciado_en, battery: session.baterias });
     }
     if (session.estado !== "creado") return jsonError("La sesión no está disponible.", 409);
 
@@ -186,6 +205,7 @@ export async function POST(request: Request) {
     if (candidateCompany.length > 200) return jsonError("La empresa no puede superar 200 caracteres.");
 
     const newResumeToken = crypto.randomUUID();
+    const startedAt = new Date().toISOString();
     const claimed = await supabaseRest<Array<{ id: string }>>(`sesiones_evaluacion?id=eq.${encodeURIComponent(session.id)}&estado=eq.creado`, {
       method: "PATCH",
       headers: { Prefer: "return=representation" },
@@ -194,7 +214,7 @@ export async function POST(request: Request) {
         candidato_edad: candidateAge,
         candidato_empresa: candidateCompany || null,
         estado: "en_progreso",
-        iniciado_en: new Date().toISOString(),
+        iniciado_en: startedAt,
         ip_inicio: requestIp(request),
         user_agent: request.headers.get("user-agent"),
         ...(hasResumeColumn ? { reanudacion_token: newResumeToken } : {}),
@@ -202,7 +222,7 @@ export async function POST(request: Request) {
     });
     if (!claimed?.[0]) return jsonError("Esta sesión acaba de ser tomada por otra solicitud. Vuelve a abrir la liga.", 409);
     const headers = hasResumeColumn ? { "Set-Cookie": resumeCookie(cookieName, newResumeToken) } : undefined;
-    return Response.json({ sessionId: session.id, status: "en_progreso", battery: session.baterias }, headers ? { headers } : undefined);
+    return Response.json({ sessionId: session.id, status: "en_progreso", startedAt, battery: session.baterias }, headers ? { headers } : undefined);
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "No se pudo procesar la sesión.", 500);
   }

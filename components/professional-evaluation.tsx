@@ -18,7 +18,7 @@ import {
   type EvaluationItem,
   type EvaluationItemType,
 } from "@/lib/evaluation-items";
-import { batteryTestCatalog, getBatteryItems } from "@/lib/psychometric-battery";
+import { batteryTestCatalog, getBatteryItemsForDraftEvaluation } from "@/lib/psychometric-battery-public";
 
 type EvaluationView = "overview" | "apply" | "results" | "items" | "calibration";
 type PhaseStatus = "pending" | "in-progress" | "complete";
@@ -27,7 +27,7 @@ type CalibrationPhase = { id: string; label: string; description: string; status
 const itemsStorageKey = "microrealidades:evaluacion-profesional:items:demo";
 const applicationsStorageKey = "microrealidades:evaluacion-profesional:applications:demo";
 const calibrationStorageKey = "microrealidades:evaluacion-profesional:calibration:demo";
-const professionalEvaluationItems = getBatteryItems(batteryTestCatalog.map((test) => test.id));
+const professionalEvaluationItems = getBatteryItemsForDraftEvaluation(batteryTestCatalog.map((test) => test.id));
 
 const initialPhases: CalibrationPhase[] = [
   { id: "expert-review", label: "Revisión experta", description: "Revisar pertinencia, lenguaje, cobertura y sesgos con profesionales del campo.", status: "pending", note: "" },
@@ -120,12 +120,13 @@ function ItemResponse({ item, value, onChange }: { item: EvaluationItem; value?:
 
   return (
     <div className="evaluation-choice-list" role="radiogroup" aria-label={item.prompt}>
-      {(item.options ?? []).map((option) => (
-            <label key={option.value} className={value === option.score ? "is-selected" : ""}>
-          <input type="radio" name={item.id} checked={value === option.score} onChange={() => onChange(option.score)} />
+      {(item.options ?? []).map((option, index) => {
+        const score = option.score ?? index + 1;
+        return <label key={option.value} className={value === score ? "is-selected" : ""}>
+          <input type="radio" name={item.id} checked={value === score} onChange={() => onChange(score)} />
           <span>{option.label}</span>
-        </label>
-      ))}
+        </label>;
+      })}
     </div>
   );
 }

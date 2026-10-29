@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
-import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
-import { assignmentTestId, batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
+import { assignmentTestId, batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery-public";
 
 type SuperBatteryMode = "home" | "recruiter" | "candidate";
 type CandidateStage = "access" | "quiz" | "break" | "thanks";
@@ -25,7 +24,7 @@ function CandidateItem({ item, value, onChange }: { item: EvaluationItem; value?
   if (item.type === "likert") {
     return <div className="super-battery-likert" role="radiogroup" aria-label={item.prompt}>{likertLabels.map((label, index) => { const score = index + 1; return <label className={value === score ? "is-selected" : ""} key={score}><input type="radio" name={item.id} checked={value === score} onChange={() => onChange(score)} /><strong>{score}</strong><small>{label.split(" · ")[1]}</small></label>; })}</div>;
   }
-  return <div className="super-battery-options" role="radiogroup" aria-label={item.prompt}>{(item.options ?? []).map((option) => { const answer = item.correctValue ? option.value : option.score; return <label className={value === answer ? "is-selected" : ""} key={option.value}><input type="radio" name={item.id} checked={value === answer} onChange={() => onChange(answer)} /><span>{option.label}</span></label>; })}</div>;
+  return <div className="super-battery-options" role="radiogroup" aria-label={item.prompt}>{(item.options ?? []).map((option) => <label className={value === option.value ? "is-selected" : ""} key={option.value}><input type="radio" name={item.id} checked={value === option.value} onChange={() => onChange(option.value)} /><span>{option.label}</span></label>)}</div>;
 }
 
 function DemoNotice() {
@@ -72,6 +71,15 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedResultSessionId, setSelectedResultSessionId] = useState("");
   const timeoutTriggeredRef = useRef(false);
+  const testDurationsRef = useRef<Record<string, number>>({});
+  const activeTestStartedAtRef = useRef<number | null>(null);
+
+  const recordCurrentTestDuration = useCallback((testId: string) => {
+    const startedAt = activeTestStartedAtRef.current;
+    if (!testId || startedAt === null) return;
+    testDurationsRef.current[testId] = (testDurationsRef.current[testId] ?? 0) + Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+    activeTestStartedAtRef.current = null;
+  }, []);
 
   const candidateItems = useMemo(() => getBatteryItems(candidateTestIds), [candidateTestIds]);
   const currentTestId = candidateTestIds[candidateTestIndex] ?? "";
@@ -291,7 +299,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     if (hasSupabase) {
       try {
         const response = await fetch("/api/evaluaciones/sesion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", code: candidateCode, name: candidateName, age: Number(candidateAge), company: candidateCompany }) });
-        const data = await response.json() as { sessionId?: string; error?: string; battery?: { nombre?: string; pruebas?: Array<{ testId?: string; prueba_id?: string }>; tiempo_total_min?: number } };
+        const data = await response.json() as { sessionId?: string; startedAt?: string; error?: string; battery?: { nombre?: string; pruebas?: Array<{ testId?: string; prueba_id?: string }>; tiempo_total_min?: number } };
         if (!response.ok || !data.sessionId) {
           setCandidateError(data.error ?? "No se pudo iniciar la sesión.");
           return;
@@ -302,15 +310,28 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
         setCandidateTestIds(activeTestIds);
         setCandidateBatteryName(data.battery?.nombre ?? defaultBattery.name);
         const durationMinutes = data.battery?.tiempo_total_min ?? defaultBattery.totalMinutes;
-        setSecondsLeft(durationMinutes * 60);
+        const startedAt = data.startedAt ? Date.parse(data.startedAt) : Date.now();
+        const elapsedSeconds = Number.isFinite(startedAt) ? Math.max(0, (Date.now() - startedAt) / 1000) : 0;
+        setSecondsLeft(Math.max(0, Math.ceil(durationMinutes * 60 - elapsedSeconds)));
       } catch {
         setCandidateError("No se pudo conectar con el servidor. Intenta nuevamente.");
         return;
       }
     }
-    setCandidateResponses(draftResponses);
-    const firstUnansweredTest = activeTestIds.findIndex((testId) => getBatteryItems([testId]).some((item) => draftResponses[item.id] === undefined));
-    setCandidateTestIndex(firstUnansweredTest === -1 ? Math.max(0, activeTestIds.length - 1) : firstUnansweredTest);
+    const normalizedDraft = { ...draftResponses };
+    const legacyCleaverValue: Record<number, string> = { 5: "A", 4: "B", 3: "C", 2: "D" };
+    for (const item of getBatteryItems(activeTestIds)) {
+      const previousValue = normalizedDraft[item.id];
+      if (item.sourceTestId === "cleaver_disc" && typeof previousValue === "number") {
+        normalizedDraft[item.id] = legacyCleaverValue[previousValue] ?? previousValue;
+      }
+    }
+    setCandidateResponses(normalizedDraft);
+    const firstUnansweredTest = activeTestIds.findIndex((testId) => getBatteryItems([testId]).some((item) => normalizedDraft[item.id] === undefined));
+    const initialTestIndex = firstUnansweredTest === -1 ? Math.max(0, activeTestIds.length - 1) : firstUnansweredTest;
+    setCandidateTestIndex(initialTestIndex);
+    testDurationsRef.current = {};
+    activeTestStartedAtRef.current = Date.now();
     if (!hasSupabase) setSecondsLeft(defaultBattery.totalMinutes * 60);
     setCandidateStage("quiz");
   }
@@ -321,6 +342,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
       setCandidateError(`Faltan ${missing} respuestas en esta prueba antes de continuar.`);
       return;
     }
+    recordCurrentTestDuration(currentTestId);
     setCandidateError("");
     if (candidateTestIndex < candidateTestIds.length - 1) {
       setCandidateStage("break");
@@ -332,6 +354,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   function continueToNextTest() {
     if (candidateTestIndex >= candidateTestIds.length - 1) return;
     setCandidateError("");
+    activeTestStartedAtRef.current = Date.now();
     setCandidateTestIndex((current) => current + 1);
     setCandidateStage("quiz");
   }
@@ -342,12 +365,12 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
       setCandidateError(`Faltan ${candidateItems.length - answered} respuestas. Puedes enviar cuando completes la batería.`);
       return;
     }
+    recordCurrentTestDuration(candidateTestIds[candidateTestIndex] ?? "");
     setIsSubmitting(true);
     setCandidateError("");
     try {
-      const results = calculateConfiguredBatteryResult(candidateTestIds, candidateResponses);
       if (hasSupabase && candidateSessionId) {
-        const response = await fetch("/api/evaluaciones/sesion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", code: candidateCode, sessionId: candidateSessionId, responses: candidateResponses, timedOut }) });
+        const response = await fetch("/api/evaluaciones/sesion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", code: candidateCode, sessionId: candidateSessionId, responses: candidateResponses, testDurationsSeconds: testDurationsRef.current, timedOut }) });
         const data = await response.json() as { error?: string };
         if (!response.ok) {
           setCandidateError(data.error ?? "No se pudo guardar la aplicación. El código no se consumió; intenta de nuevo.");
@@ -361,12 +384,12 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
         window.location.assign(`/evaluacion/${encodeURIComponent(candidateCode)}/gracias`);
         return;
       }
-      setMessage(`Aplicación recibida. Perfil descriptivo: ${results.globalScore ?? "—"}/100.`);
+      setMessage("Aplicación de prueba recibida. Los resultados se calculan únicamente en el servidor cuando Supabase está conectado.");
       setCandidateStage("thanks");
     } finally {
       setIsSubmitting(false);
     }
-  }, [answered, candidateCode, candidateItems, candidateResponses, candidateSessionId, candidateTestIds, isSubmitting]);
+  }, [answered, candidateCode, candidateItems, candidateResponses, candidateSessionId, candidateTestIds, candidateTestIndex, isSubmitting, recordCurrentTestDuration]);
 
   useEffect(() => {
     if (candidateStage !== "quiz" && candidateStage !== "break") {
@@ -390,6 +413,8 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     setCandidateAge("");
     setCandidateCompany("");
     setCandidateResponses({});
+    testDurationsRef.current = {};
+    activeTestStartedAtRef.current = null;
     setCandidateError("");
     setMessage("");
   }

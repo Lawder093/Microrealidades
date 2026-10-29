@@ -52,12 +52,10 @@ export const HABILIDADES_CONOCIMIENTOS: Prueba = {
     subarea,
     enunciado,
     opciones: [
-      { valor: "A" as const, etiqueta: enunciado },
-      { valor: "B" as const, etiqueta: "Aplicar una regla fija sin explorar contexto ni límites." },
+      { valor: "A" as const, etiqueta: "Aplicar una regla fija sin explorar contexto ni límites." },
+      { valor: "B" as const, etiqueta: enunciado },
       { valor: "C" as const, etiqueta: "Dejar la decisión para después sin registrarla ni consultarla." },
       { valor: "D" as const, etiqueta: "Delegar toda la responsabilidad sin explicar el siguiente paso." },
     ],
-    respuestaCorrecta: "A" as const,
-    justificacion: "La respuesta representa una práctica situada, documentable y respetuosa de los límites profesionales.",
   })),
 };

@@ -33,8 +33,6 @@ export interface ItemOpcionMultiple {
   enunciado: string;
   subarea: string;
   opciones: Array<{ valor: ValorOpcion; etiqueta: string }>;
-  respuestaCorrecta: ValorOpcion;
-  justificacion: string;
 }
 
 export type Item = ItemForzado | ItemLikert | ItemOpcionMultiple;
