@@ -39,8 +39,8 @@ export async function POST(request: Request) {
       try {
         const digest = await crypto.subtle.digest("SHA-256", reportPdf);
         pdfHash = Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
-        await supabaseStorageUpload(`evaluation-reports/${encodeURIComponent(session.id)}.pdf`, reportPdf);
-        pdfPath = `evaluation-reports/${session.id}.pdf`;
+        await supabaseStorageUpload(`evaluaciones-pdf/${encodeURIComponent(session.id)}.pdf`, reportPdf);
+        pdfPath = `evaluaciones-pdf/${session.id}.pdf`;
       } catch {
         // Completion remains available even when Storage has not been provisioned yet.
       }
