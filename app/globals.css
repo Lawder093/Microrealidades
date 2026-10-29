@@ -898,6 +898,9 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  .super-battery-thanks h3{margin:25px 0 14px}
  .super-battery-thanks p{margin:0;color:#101114b5;font-size:15px;line-height:1.5}
  .super-battery-thanks small{max-width:470px;margin-top:13px;color:#10111480;font-size:12px;line-height:1.45}
+ .super-battery-rest{gap:12px}
+ .super-battery-rest .section-label{margin:0!important;color:#10111470!important;font:10px monospace!important;letter-spacing:.06em;text-transform:uppercase}
+ .super-battery-rest small strong{color:#101114;font-size:inherit}
  .super-battery-results{margin-top:30px;padding:25px;background:#e4e1d8;border-top:2px solid var(--pink)}
  .super-battery-results-head{display:flex;align-items:start;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid #10111435}
  .super-battery-results-head h4{margin:12px 0 5px;font-size:28px;letter-spacing:-.05em}
