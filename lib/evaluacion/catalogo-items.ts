@@ -6,3 +6,5 @@ export { ETICA_PROFESIONALISMO } from "@/lib/evaluacion/items/etica-profesionali
 export { HABILIDADES_CONOCIMIENTOS } from "@/lib/evaluacion/items/habilidades-conocimientos";
 export { RELACION_TERAPEUTICA } from "@/lib/evaluacion/items/relacion-terapeutica";
 export { CONOCIMIENTOS_AUTISMO } from "@/lib/evaluacion/items/conocimientos-autismo";
+export { CLEAVER_DISC } from "@/lib/evaluacion/items/cleaver-disc";
+export { DIECISEIS_FACTORES } from "@/lib/evaluacion/items/dieciseis-factores";

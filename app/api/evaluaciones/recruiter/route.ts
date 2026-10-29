@@ -32,6 +32,7 @@ export async function POST(request: Request) {
   try {
     if (body.action === "create-battery") {
       const requestedTests = Array.isArray(body.tests) ? body.tests : [];
+      if (requestedTests.length === 0) return jsonError("Selecciona al menos una prueba para crear la batería.");
       const requestedIds = requestedTests.map((test) => test.testId);
       const allowedIds = new Set(batteryTestCatalog.map((test) => test.id));
       const hasDuplicateTests = new Set(requestedIds).size !== requestedIds.length;
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       if (requestedTests.length > 0 && (hasDuplicateTests || hasUnknownTests)) return jsonError("La batería contiene pruebas inválidas o duplicadas.");
       const totalMinutes = Number(body.totalMinutes ?? defaultBattery.totalMinutes);
       if (!Number.isFinite(totalMinutes) || totalMinutes < 1 || totalMinutes > 240) return jsonError("El tiempo total debe estar entre 1 y 240 minutos.");
-      const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: requestedTests.length ? requestedTests : defaultBattery.tests, tiempo_total_min: totalMinutes }) });
+      const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: requestedTests, tiempo_total_min: totalMinutes }) });
       return Response.json({ battery: battery[0] });
     }
     if (body.action === "create-session" && body.batteryId) {

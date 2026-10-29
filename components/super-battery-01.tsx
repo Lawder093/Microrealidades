@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
-import { defaultEvaluationItems, evaluationDimensions, likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
+import { evaluationDimensions, likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
 import { batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems } from "@/lib/psychometric-battery";
 
 type SuperBatteryMode = "home" | "recruiter" | "candidate";
 type CandidateStage = "access" | "quiz" | "thanks";
-type DashboardResult = { globalScore?: number | null; dimensions?: Array<{ dimension: string; score: number | null; answered: number; total: number }> };
+type DashboardResult = { globalScore?: number | null; dimensions?: Array<{ dimension: string; score: number | null; answered: number; total: number }>; clinicalResult?: { resultadosPorPrueba?: Array<{ pruebaId: string; porcentaje?: number; banda?: string; interpretacion?: string; interpretacionTecnica?: string }> } };
 type DashboardSession = { id: string; codigo: string; bateria_id: string; candidato_nombre?: string; candidato_empresa?: string; estado: string; resultados?: DashboardResult; created_at: string; finalizado_en?: string; baterias?: { nombre?: string; clasificacion_puesto?: string } | null };
 type DashboardBattery = { id: string; nombre: string; clasificacion_puesto: string; tiempo_total_min: number; activa: boolean };
 
@@ -59,7 +59,7 @@ export function SuperBattery01() {
   const [shareLink, setShareLink] = useState("");
   const [message, setMessage] = useState("");
 
-  const candidateItems = useMemo(() => getBatteryItems(candidateTestIds, defaultEvaluationItems), [candidateTestIds]);
+  const candidateItems = useMemo(() => getBatteryItems(candidateTestIds), [candidateTestIds]);
   const answered = candidateItems.filter((item) => candidateResponses[item.id] !== undefined).length;
   const progress = candidateItems.length ? Math.round((answered / candidateItems.length) * 100) : 0;
 
@@ -133,6 +133,10 @@ export function SuperBattery01() {
 
   async function createBattery() {
     setMessage("");
+    if (selectedTestIds.length === 0) {
+      setRecruiterError("Selecciona al menos una prueba antes de crear la batería.");
+      return;
+    }
     if (!hasSupabase || !recruiterToken) {
       const demoBattery: DashboardBattery = { id: `demo-${Date.now()}`, nombre: batteryName.trim() || defaultBattery.name, clasificacion_puesto: batteryClassification, tiempo_total_min: Number(batteryMinutes) || defaultBattery.totalMinutes, activa: true };
       setBatteries((current) => [demoBattery, ...current]);

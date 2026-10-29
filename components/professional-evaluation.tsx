@@ -11,7 +11,6 @@ import {
   type ParticipantType,
 } from "@/lib/evaluation-engine";
 import {
-  defaultEvaluationItems,
   evaluationDimensions,
   getDimension,
   likertLabels,
@@ -19,6 +18,7 @@ import {
   type EvaluationItem,
   type EvaluationItemType,
 } from "@/lib/evaluation-items";
+import { batteryTestCatalog, getBatteryItems } from "@/lib/psychometric-battery";
 
 type EvaluationView = "overview" | "apply" | "results" | "items" | "calibration";
 type PhaseStatus = "pending" | "in-progress" | "complete";
@@ -27,6 +27,7 @@ type CalibrationPhase = { id: string; label: string; description: string; status
 const itemsStorageKey = "microrealidades:evaluacion-profesional:items:demo";
 const applicationsStorageKey = "microrealidades:evaluacion-profesional:applications:demo";
 const calibrationStorageKey = "microrealidades:evaluacion-profesional:calibration:demo";
+const professionalEvaluationItems = getBatteryItems(batteryTestCatalog.map((test) => test.id));
 
 const initialPhases: CalibrationPhase[] = [
   { id: "expert-review", label: "Revisión experta", description: "Revisar pertinencia, lenguaje, cobertura y sesgos con profesionales del campo.", status: "pending", note: "" },
@@ -260,14 +261,14 @@ function CalibrationView({ items, applications, phases, onUpdatePhase, onExportA
 
 export function ProfessionalEvaluation() {
   const [view, setView] = useState<EvaluationView>("overview");
-  const [items, setItems] = useState<EvaluationItem[]>(defaultEvaluationItems);
+  const [items, setItems] = useState<EvaluationItem[]>(professionalEvaluationItems);
   const [applications, setApplications] = useState<EvaluationApplication[]>([]);
   const [phases, setPhases] = useState<CalibrationPhase[]>(initialPhases);
   const [selectedApplicationId, setSelectedApplicationId] = useState<string | null>(null);
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
-    setItems(readStorage(itemsStorageKey, defaultEvaluationItems));
+    setItems(readStorage(itemsStorageKey, professionalEvaluationItems));
     setApplications(readStorage(applicationsStorageKey, []));
     setPhases(readStorage(calibrationStorageKey, initialPhases));
     setStorageReady(true);
