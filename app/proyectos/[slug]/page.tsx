@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getProject, projects } from "@/lib/projects";
@@ -18,6 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  if (slug === "super-bateria-01") redirect("/evaluaciones");
   const project = getProject(slug);
   if (!project) notFound();
 
@@ -33,7 +34,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <div>
             <p>{project.description}</p>
             <span className="status">{project.status}</span>
-            {project.slug === "vidovic-01" && <Link className="section-link project-evaluation-link" href="/evaluaciones-psicometricas">Abrir Super batería 01 <span aria-hidden="true">↗</span></Link>}
           </div>
         </div>
       </article>

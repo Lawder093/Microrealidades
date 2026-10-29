@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function ProfessionalEvaluationPage() {
-  redirect("/evaluaciones-psicometricas");
+  redirect("/evaluaciones");
 }

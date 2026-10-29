@@ -5,7 +5,7 @@ const navigation = [
   { label: "Proyectos", href: "/proyectos" },
   { label: "Microhub", href: "/microhub" },
   { label: "Publicaciones", href: "/publicaciones" },
-  { label: "Evaluaciones Psicométricas", href: "/evaluaciones-psicometricas" },
+  { label: "Evaluaciones", href: "/evaluaciones" },
   { label: "Ingresar", href: "/ingresar" },
 ];
 

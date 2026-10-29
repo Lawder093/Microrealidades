@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useSearchParams } from "next/navigation";
 import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
-import { evaluationDimensions, likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
+import { likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
 import { assignmentTestId, batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
 
 type SuperBatteryMode = "home" | "recruiter" | "candidate";
@@ -72,11 +72,6 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedResultSessionId, setSelectedResultSessionId] = useState("");
   const timeoutTriggeredRef = useRef(false);
-  const finishCandidateRef = useRef<((timedOut?: boolean) => Promise<void>) | null>(null);
-
-  useEffect(() => {
-    finishCandidateRef.current = finishCandidate;
-  });
 
   const candidateItems = useMemo(() => getBatteryItems(candidateTestIds), [candidateTestIds]);
   const currentTestId = candidateTestIds[candidateTestIndex] ?? "";
@@ -108,19 +103,6 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     const timer = window.setInterval(() => setSecondsLeft((current) => Math.max(0, current - 1)), 1000);
     return () => window.clearInterval(timer);
   }, [candidateStage]);
-
-  useEffect(() => {
-    if (candidateStage !== "quiz" && candidateStage !== "break") {
-      timeoutTriggeredRef.current = false;
-      return undefined;
-    }
-    if (secondsLeft <= 0 && !timeoutTriggeredRef.current) {
-      timeoutTriggeredRef.current = true;
-      setCandidateError("El tiempo terminó. Se enviarán las respuestas disponibles.");
-      void finishCandidateRef.current?.(true);
-    }
-    return undefined;
-  }, [candidateStage, secondsLeft]);
 
   useEffect(() => {
     if ((candidateStage !== "quiz" && candidateStage !== "break") || !candidateCode) return undefined;
@@ -354,7 +336,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     setCandidateStage("quiz");
   }
 
-  async function finishCandidate(timedOut = false) {
+  const finishCandidate = useCallback(async (timedOut = false) => {
     if (isSubmitting) return;
     if (!timedOut && answered < candidateItems.length) {
       setCandidateError(`Faltan ${candidateItems.length - answered} respuestas. Puedes enviar cuando completes la batería.`);
@@ -384,7 +366,20 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     } finally {
       setIsSubmitting(false);
     }
-  }
+  }, [answered, candidateCode, candidateItems, candidateResponses, candidateSessionId, candidateTestIds, isSubmitting]);
+
+  useEffect(() => {
+    if (candidateStage !== "quiz" && candidateStage !== "break") {
+      timeoutTriggeredRef.current = false;
+      return undefined;
+    }
+    if (secondsLeft <= 0 && !timeoutTriggeredRef.current) {
+      timeoutTriggeredRef.current = true;
+      setCandidateError("El tiempo terminó. Se enviarán las respuestas disponibles.");
+      void finishCandidate(true);
+    }
+    return undefined;
+  }, [candidateStage, finishCandidate, secondsLeft]);
 
   function resetCandidate() {
     setCandidateStage("access");
