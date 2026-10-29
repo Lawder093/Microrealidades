@@ -20,6 +20,9 @@ export type EvaluationItem = {
   prompt: string;
   active: boolean;
   options?: EvaluationOption[];
+  correctValue?: string;
+  sourceTestId?: string;
+  subarea?: string;
 };
 
 export const evaluationDimensions: Array<{
@@ -236,6 +239,6 @@ export const likertLabels = [
   "5 · Siempre / me describe",
 ];
 
-export function getDimension(id: EvaluationDimension) {
+export function getDimension(id: string) {
   return evaluationDimensions.find((dimension) => dimension.id === id) ?? evaluationDimensions[0];
 }

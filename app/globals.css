@@ -102,6 +102,12 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
    .access-panel h1{margin:58px 0 32px;font-size:clamp(58px,17vw,92px)}
    .access-panel>p:not(.section-label){font-size:16px;margin-bottom:30px}
  }
+
+ /* Enlaces privados de baterías */
+ .super-battery-share{margin-top:20px;padding-top:16px;border-top:1px solid #10111435}
+ .super-battery-share label{margin-top:0}
+ .super-battery-share input{font-size:12px;color:#101114a5;overflow:hidden;text-overflow:ellipsis}
+ .super-battery-share .super-battery-small-action{margin-top:13px}
  .hub-journal-divider{margin:120px 0;border-top:1px solid #10111440}
  .hub-journal-heading{margin-bottom:55px}
  .patient-module{max-width:1400px}

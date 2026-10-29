@@ -1,0 +1,26 @@
+/**
+ * Banco original de habilidades y conocimientos para el perfil clínico infantil.
+ *
+ * NOTA METODOLÓGICA: son reactivos de trabajo escritos para este producto,
+ * inspirados en competencias profesionales generales. No reproducen instrumentos
+ * licenciados, no están validados y no sustituyen formación o supervisión.
+ */
+import type { Prueba } from "@/types/evaluacion";
+
+export const HABILIDADES_CONOCIMIENTOS: Prueba = {
+  id: "habilidades_conocimientos",
+  nombre: "Habilidades y Conocimientos",
+  tipo: "conocimiento_tecnico",
+  instrucciones: "Seleccione la respuesta más adecuada según buenas prácticas de evaluación e intervención infantil. No constituye una certificación.",
+  subareas: ["evaluacion_situada", "documentacion", "comunicacion", "supervision", "intervencion_respetuosa"],
+  items: [
+    { id: "hc01", tipo: "opcion_multiple", subarea: "evaluacion_situada", enunciado: "Una herramienta de tamizaje sirve principalmente para:", opciones: [{ valor: "A", etiqueta: "Confirmar por sí sola un diagnóstico." }, { valor: "B", etiqueta: "Orientar una exploración posterior considerando contexto y entrevista." }, { valor: "C", etiqueta: "Sustituir la observación." }, { valor: "D", etiqueta: "Clasificar a la persona de forma definitiva." }], respuestaCorrecta: "B", justificacion: "El tamizaje orienta riesgo o necesidad de exploración; no sustituye una evaluación integral." },
+    { id: "hc02", tipo: "opcion_multiple", subarea: "documentacion", enunciado: "Un registro profesional de sesión debe:", opciones: [{ valor: "A", etiqueta: "Distinguir observaciones, hipótesis, acuerdos y próximos pasos." }, { valor: "B", etiqueta: "Incluir solo impresiones personales." }, { valor: "C", etiqueta: "Omitir incidentes para evitar problemas." }, { valor: "D", etiqueta: "Copiar una nota anterior." }], respuestaCorrecta: "A", justificacion: "La documentación útil separa hechos observables de interpretaciones y facilita continuidad." },
+    { id: "hc03", tipo: "escenario_clinico", subarea: "comunicacion", enunciado: "Una familia no comprende el plan de intervención. Lo más adecuado es:", opciones: [{ valor: "A", etiqueta: "Repetir los términos técnicos más despacio." }, { valor: "B", etiqueta: "Pedir que explique con sus palabras, usar ejemplos y ajustar la comunicación." }, { valor: "C", etiqueta: "Continuar porque ya se entregó el documento." }, { valor: "D", etiqueta: "Pedir al niño que traduzca." }], respuestaCorrecta: "B", justificacion: "La comprensión se verifica y se adapta la comunicación sin trasladar la carga al niño." },
+    { id: "hc04", tipo: "opcion_multiple", subarea: "supervision", enunciado: "Si una conducta clínica rebasa tu experiencia, debes:", opciones: [{ valor: "A", etiqueta: "Improvisar para demostrar autonomía." }, { valor: "B", etiqueta: "Documentar el límite, consultar supervisión y derivar si corresponde." }, { valor: "C", etiqueta: "Ocultarlo en el reporte." }, { valor: "D", etiqueta: "Aplicar una técnica sin informar." }], respuestaCorrecta: "B", justificacion: "Reconocer límites y buscar supervisión protege a la persona atendida y al profesional." },
+    { id: "hc05", tipo: "opcion_multiple", subarea: "intervencion_respetuosa", enunciado: "Una intervención respetuosa debe priorizar:", opciones: [{ valor: "A", etiqueta: "La obediencia visible a cualquier costo." }, { valor: "B", etiqueta: "La seguridad, comunicación, participación y calidad de vida." }, { valor: "C", etiqueta: "La rapidez del cambio sobre la comprensión." }, { valor: "D", etiqueta: "El mismo protocolo para todos." }], respuestaCorrecta: "B", justificacion: "La intervención se ajusta a la persona y prioriza apoyos funcionales y dignidad." },
+    { id: "hc06", tipo: "opcion_multiple", subarea: "evaluacion_situada", enunciado: "Cuando dos fuentes de información no coinciden, conviene:", opciones: [{ valor: "A", etiqueta: "Elegir la que confirme la primera impresión." }, { valor: "B", etiqueta: "Explorar la discrepancia y ampliar la información antes de concluir." }, { valor: "C", etiqueta: "Descartar ambas." }, { valor: "D", etiqueta: "Promediarlas sin contexto." }], respuestaCorrecta: "B", justificacion: "La discrepancia es información que requiere contexto y exploración adicional." },
+    { id: "hc07", tipo: "opcion_multiple", subarea: "documentacion", enunciado: "Una nota tardía debe:", opciones: [{ valor: "A", etiqueta: "Presentarse como si hubiera sido escrita en el momento." }, { valor: "B", etiqueta: "Identificarse como nota tardía e indicar la fecha real de registro." }, { valor: "C", etiqueta: "Eliminarse." }, { valor: "D", etiqueta: "Ser escrita por otra persona." }], respuestaCorrecta: "B", justificacion: "La trazabilidad protege la integridad del expediente." },
+    { id: "hc08", tipo: "opcion_multiple", subarea: "supervision", enunciado: "La supervisión profesional sirve para:", opciones: [{ valor: "A", etiqueta: "Delegar toda responsabilidad." }, { valor: "B", etiqueta: "Revisar razonamiento, límites, riesgos y alternativas de intervención." }, { valor: "C", etiqueta: "Obtener aprobación automática." }, { valor: "D", etiqueta: "Evitar documentar." }], respuestaCorrecta: "B", justificacion: "La supervisión fortalece el razonamiento y la práctica responsable; no elimina la responsabilidad." },
+  ],
+};

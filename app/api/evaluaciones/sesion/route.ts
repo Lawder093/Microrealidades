@@ -1,6 +1,5 @@
-import { calculateApplicationResult, type EvaluationApplication } from "@/lib/evaluation-engine";
-import { defaultEvaluationItems } from "@/lib/evaluation-items";
-import { getBatteryItems } from "@/lib/psychometric-battery";
+import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
+import type { Respuesta } from "@/lib/evaluacion/motor";
 import { supabaseIsConfigured, supabaseRest, supabaseStorageUpload } from "@/lib/supabase-rest";
 import { createEvaluationPdf } from "@/lib/evaluation-pdf";
 
@@ -12,7 +11,7 @@ function jsonError(message: string, status = 400) {
 
 export async function POST(request: Request) {
   if (!supabaseIsConfigured()) return jsonError("La conexión segura de Supabase aún no está configurada.", 503);
-  const body = await request.json() as { action?: "start" | "complete"; code?: string; sessionId?: string; name?: string; age?: number; company?: string; responses?: Record<string, number> };
+  const body = await request.json() as { action?: "start" | "complete"; code?: string; sessionId?: string; name?: string; age?: number; company?: string; responses?: Record<string, Respuesta> };
   const code = body.code?.trim().toUpperCase();
   if (!code) return jsonError("Código requerido.");
 
@@ -24,10 +23,9 @@ export async function POST(request: Request) {
 
     if (body.action === "complete") {
       if (!body.sessionId || body.sessionId !== session.id || !body.responses) return jsonError("Sesión o respuestas inválidas.");
+      if (session.estado === "completado") return jsonError("Este código ya fue utilizado.", 409);
       const testIds = session.baterias?.pruebas?.map((test) => test.testId) ?? [];
-      const items = getBatteryItems(testIds);
-      const application: EvaluationApplication = { id: session.id, participantCode: code, participantType: "candidate", evaluatorCode: "supabase", createdAt: new Date().toISOString(), completedAt: new Date().toISOString(), responses: body.responses };
-      const results = calculateApplicationResult(application, items);
+      const results = calculateConfiguredBatteryResult(testIds, body.responses);
       const reportPdf = createEvaluationPdf({ code, candidateName: session.candidato_nombre, candidateAge: session.candidato_edad, candidateCompany: session.candidato_empresa, completedAt: new Date().toISOString(), globalScore: results.globalScore, dimensions: results.dimensions });
       let pdfPath: string | null = null;
       let pdfHash: string | null = null;

@@ -9,11 +9,11 @@ export type EvaluationApplication = {
   evaluatorCode: string;
   createdAt: string;
   completedAt?: string;
-  responses: Record<string, number>;
+  responses: Record<string, number | string>;
 };
 
 export type DimensionResult = {
-  dimension: EvaluationDimension;
+  dimension: string;
   answered: number;
   total: number;
   score: number | null;
@@ -74,8 +74,8 @@ export function correlation(first: number[], second: number[]) {
 export function cronbachAlpha(applications: EvaluationApplication[], items: EvaluationItem[]) {
   const usable = applications.filter((application) => items.every((item) => Number.isFinite(application.responses[item.id])));
   if (usable.length < 3 || items.length < 2) return null;
-  const itemVariances = items.map((item) => variance(usable.map((application) => application.responses[item.id])));
-  const totalScores = usable.map((application) => items.reduce((sum, item) => sum + application.responses[item.id], 0));
+  const itemVariances = items.map((item) => variance(usable.map((application) => Number(application.responses[item.id]))));
+  const totalScores = usable.map((application) => items.reduce((sum, item) => sum + Number(application.responses[item.id]), 0));
   const totalVariance = variance(totalScores);
   if (totalVariance === 0) return null;
   return Number(((items.length / (items.length - 1)) * (1 - itemVariances.reduce((sum, value) => sum + value, 0) / totalVariance)).toFixed(2));

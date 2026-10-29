@@ -80,7 +80,7 @@ function participantLabel(type: ParticipantType) {
 }
 
 function applicationIsComplete(application: EvaluationApplication, items: EvaluationItem[]) {
-  return activeItems(items).every((item) => Number.isFinite(application.responses[item.id]));
+  return activeItems(items).every((item) => typeof application.responses[item.id] === "number" && Number.isFinite(application.responses[item.id]));
 }
 
 function ProgressBar({ value }: { value: number }) {
@@ -99,7 +99,7 @@ function DimensionCard({ dimension, score, status }: { dimension: (typeof evalua
   );
 }
 
-function ItemResponse({ item, value, onChange }: { item: EvaluationItem; value?: number; onChange: (value: number) => void }) {
+function ItemResponse({ item, value, onChange }: { item: EvaluationItem; value?: number | string; onChange: (value: number) => void }) {
   if (item.type === "likert") {
     return (
       <div className="evaluation-likert" role="radiogroup" aria-label={item.prompt}>
@@ -120,7 +120,7 @@ function ItemResponse({ item, value, onChange }: { item: EvaluationItem; value?:
   return (
     <div className="evaluation-choice-list" role="radiogroup" aria-label={item.prompt}>
       {(item.options ?? []).map((option) => (
-        <label key={option.value} className={value === option.score ? "is-selected" : ""}>
+            <label key={option.value} className={value === option.score ? "is-selected" : ""}>
           <input type="radio" name={item.id} checked={value === option.score} onChange={() => onChange(option.score)} />
           <span>{option.label}</span>
         </label>
@@ -245,7 +245,7 @@ function CalibrationView({ items, applications, phases, onUpdatePhase, onExportA
   const active = activeItems(items);
   const analyses = active.map((item) => {
     const responses = completed.map((application) => application.responses[item.id]).filter((value): value is number => Number.isFinite(value));
-    const totals = completed.filter((application) => Number.isFinite(application.responses[item.id])).map((application) => active.filter((candidate) => candidate.id !== item.id).reduce((sum, candidate) => sum + (application.responses[candidate.id] ?? 0), 0));
+    const totals = completed.filter((application) => typeof application.responses[item.id] === "number" && Number.isFinite(application.responses[item.id])).map((application) => active.filter((candidate) => candidate.id !== item.id).reduce((sum, candidate) => sum + (typeof application.responses[candidate.id] === "number" ? application.responses[candidate.id] as number : 0), 0));
     return { item, n: responses.length, mean: responses.length ? (responses.reduce((sum, value) => sum + value, 0) / responses.length).toFixed(2) : "—", correlation: correlation(responses, totals) ?? "—" };
   });
   return (
