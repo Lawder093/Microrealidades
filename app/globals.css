@@ -893,7 +893,24 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  .super-battery-thanks h3{margin:25px 0 14px}
  .super-battery-thanks p{margin:0;color:#101114b5;font-size:15px;line-height:1.5}
  .super-battery-thanks small{max-width:470px;margin-top:13px;color:#10111480;font-size:12px;line-height:1.45}
+ .super-battery-results{margin-top:30px;padding:25px;background:#e4e1d8;border-top:2px solid var(--pink)}
+ .super-battery-results-head{display:flex;align-items:start;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid #10111435}
+ .super-battery-results-head h4{margin:12px 0 5px;font-size:28px;letter-spacing:-.05em}
+ .super-battery-results-head small{color:#10111480;font:10px monospace;text-transform:uppercase;letter-spacing:.06em}
+ .super-battery-results-score{display:grid;grid-template-columns:1fr auto;gap:8px 20px;padding:22px 0;border-bottom:1px solid #10111425}
+ .super-battery-results-score>span{color:#10111480;font:10px monospace;text-transform:uppercase;letter-spacing:.06em}
+ .super-battery-results-score strong{color:var(--pink);font-size:35px;letter-spacing:-.05em}
+ .super-battery-results-score strong small{margin-left:4px;color:#10111480;font:11px monospace}
+ .super-battery-results-score p{grid-column:1/-1;margin:0;color:#101114a5;font-size:13px;line-height:1.45}
+ .super-battery-result-dimensions{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:20px;background:#10111430}
+ .super-battery-result-dimensions article{display:grid;gap:9px;padding:15px;background:#eeeae1}
+ .super-battery-result-dimensions span{color:#10111485;font:10px monospace;text-transform:uppercase;letter-spacing:.05em}
+ .super-battery-result-dimensions strong{color:var(--blue);font-size:25px}
+ .super-battery-result-dimensions strong small{margin-left:6px;color:#10111480;font:10px monospace}
+ .super-battery-interpretation{margin-top:18px;padding-top:18px;border-top:1px solid #10111425}
+ .super-battery-interpretation p:last-child{max-width:850px;margin:8px 0 0;color:#101114b5;font-size:13px;line-height:1.5}
  @media(max-width:760px){
+   .psychometric-page-intro h1{max-width:100%;font-size:clamp(48px,14vw,90px);overflow-wrap:break-word}
    .super-battery-header{display:block;padding-bottom:35px}
    .super-battery-header h2{margin-top:56px;font-size:clamp(48px,15vw,84px)}
    .super-battery-badge{width:170px;margin-top:29px}
@@ -907,4 +924,7 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
    .super-battery-likert small{font-size:8px}
    .super-battery-quiz-foot,.super-battery-list>article{display:block}
    .super-battery-quiz-foot .super-battery-action,.super-battery-list article .super-battery-small-action{margin-top:18px}
+   .super-battery-results{padding:20px 0;background:transparent}
+   .super-battery-result-dimensions{grid-template-columns:1fr}
+   .super-battery-results-head h4{font-size:24px}
  }

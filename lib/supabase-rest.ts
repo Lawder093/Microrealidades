@@ -49,4 +49,14 @@ export async function supabaseStorageUpload(path: string, body: BodyInit) {
   if (!response.ok) throw new Error(`Storage respondió ${response.status}.`);
 }
 
+export async function supabaseStorageDownload(path: string) {
+  const { url, key } = getSupabaseConfig();
+  const response = await fetch(`${url}/storage/v1/object/${path}`, {
+    headers: { apikey: key, Authorization: `Bearer ${key}` },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`Storage respondió ${response.status}.`);
+  return response.arrayBuffer();
+}
+
 export { supabaseUrl };

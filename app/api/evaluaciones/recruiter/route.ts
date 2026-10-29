@@ -51,17 +51,33 @@ export async function POST(request: Request) {
       const hasUnknownTests = requestedIds.some((testId) => !allowedIds.has(testId));
       if (requestedTests.length > 0 && (hasDuplicateTests || hasUnknownTests)) return jsonError("La batería contiene pruebas inválidas o duplicadas.");
       const totalMinutes = Number(body.totalMinutes ?? defaultBattery.totalMinutes);
-      if (!Number.isFinite(totalMinutes) || totalMinutes < 1 || totalMinutes > 240) return jsonError("El tiempo total debe estar entre 1 y 240 minutos.");
-      const assignments = requestedTests.map((test, index) => { const testId = test.testId ?? test.prueba_id ?? ""; const seconds = test.timeLimitSeconds ?? test.tiempo_limite_seg ?? 900; return { prueba_id: testId, orden: test.orden ?? test.order ?? index + 1, tiempo_limite_seg: seconds, testId, order: test.orden ?? test.order ?? index + 1, timeLimitSeconds: seconds }; });
+      if (!Number.isInteger(totalMinutes) || totalMinutes < 1 || totalMinutes > 240) return jsonError("El tiempo total debe ser un número entero entre 1 y 240 minutos.");
+      const invalidTimeLimit = requestedTests.some((test) => {
+        const seconds = Number(test.timeLimitSeconds ?? test.tiempo_limite_seg ?? 900);
+        return !Number.isInteger(seconds) || seconds < 60 || seconds > 14400;
+      });
+      if (invalidTimeLimit) return jsonError("Cada prueba debe tener un tiempo límite entero entre 60 y 14,400 segundos.");
+      const assignments = requestedTests.map((test, index) => {
+        const testId = test.testId ?? test.prueba_id ?? "";
+        const seconds = Number(test.timeLimitSeconds ?? test.tiempo_limite_seg ?? 900);
+        const order = index + 1;
+        return { prueba_id: testId, orden: order, tiempo_limite_seg: seconds, testId, order, timeLimitSeconds: seconds };
+      });
       const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: assignments, tiempo_total_min: totalMinutes }) });
       return Response.json({ battery: battery[0] });
     }
     if (body.action === "create-session" && body.batteryId) {
       const ownedBatteries = await supabaseRest<Array<{ id: string }>>(`baterias?id=eq.${encodeURIComponent(body.batteryId)}&reclutador_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`);
       if (!ownedBatteries[0]) return jsonError("La batería no existe o no pertenece a este reclutador.", 404);
-      const code = `SB01-${crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
-      const session = await supabaseRest<Array<Record<string, unknown>>>("sesiones_evaluacion", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ codigo: code, bateria_id: body.batteryId, reclutador_id: user.id }) });
-      return Response.json({ session: session[0], sharePath: `/evaluacion/${encodeURIComponent(code)}` });
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const code = `SB01-${crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+        try {
+          const session = await supabaseRest<Array<Record<string, unknown>>>("sesiones_evaluacion", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ codigo: code, bateria_id: body.batteryId, reclutador_id: user.id }) });
+          return Response.json({ session: session[0], sharePath: `/evaluacion/${encodeURIComponent(code)}` });
+        } catch (error) {
+          if (attempt === 2) throw error;
+        }
+      }
     }
     return jsonError("Acción no reconocida.");
   } catch (error) {
