@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { evaluationDimensions, likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
-import { batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems } from "@/lib/psychometric-battery";
+import { assignmentTestId, batteryPresets, batteryTestCatalog, defaultBattery, getBatteryItems } from "@/lib/psychometric-battery";
 
 type SuperBatteryMode = "home" | "recruiter" | "candidate";
 type CandidateStage = "access" | "quiz" | "thanks";
@@ -143,7 +143,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
       setMessage("Batería creada en modo demo.");
       return;
     }
-    const response = await fetch("/api/evaluaciones/recruiter", { method: "POST", headers: { Authorization: `Bearer ${recruiterToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "create-battery", name: batteryName, classification: batteryClassification, totalMinutes: Number(batteryMinutes), tests: selectedTestIds.map((testId, index) => ({ testId, order: index + 1, timeLimitSeconds: batteryClassification === "PSIC-CLIN-INF" ? 900 : 360 })) }) });
+    const response = await fetch("/api/evaluaciones/recruiter", { method: "POST", headers: { Authorization: `Bearer ${recruiterToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "create-battery", name: batteryName, classification: batteryClassification, totalMinutes: Number(batteryMinutes), tests: selectedTestIds.map((testId, index) => ({ prueba_id: testId, orden: index + 1, tiempo_limite_seg: batteryClassification === "PSIC-CLIN-INF" ? 900 : 360 })) }) });
     const data = await response.json() as { battery?: DashboardBattery; error?: string };
     if (data.battery) {
       setBatteries((current) => [data.battery as DashboardBattery, ...current]);
@@ -214,13 +214,13 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     }
     if (hasSupabase) {
       const response = await fetch("/api/evaluaciones/sesion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", code: candidateCode, name: candidateName, age: Number(candidateAge), company: candidateCompany }) });
-      const data = await response.json() as { sessionId?: string; error?: string; battery?: { nombre?: string; pruebas?: Array<{ testId: string }>; tiempo_total_min?: number } };
+      const data = await response.json() as { sessionId?: string; error?: string; battery?: { nombre?: string; pruebas?: Array<{ testId?: string; prueba_id?: string }>; tiempo_total_min?: number } };
       if (!response.ok || !data.sessionId) {
         setCandidateError(data.error ?? "No se pudo iniciar la sesión.");
         return;
       }
       setCandidateSessionId(data.sessionId);
-      const assignedTests = data.battery?.pruebas?.map((test) => test.testId).filter(Boolean) ?? [];
+      const assignedTests = data.battery?.pruebas?.map(assignmentTestId).filter(Boolean) ?? [];
       setCandidateTestIds(assignedTests.length ? assignedTests : defaultBattery.tests.map((test) => test.testId));
       setCandidateBatteryName(data.battery?.nombre ?? defaultBattery.name);
       const durationMinutes = data.battery?.tiempo_total_min ?? defaultBattery.totalMinutes;
@@ -243,6 +243,10 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
         setCandidateError("No se pudo guardar la aplicación. El código no se consumió; intenta de nuevo.");
         return;
       }
+    }
+    if (hasSupabase && candidateSessionId) {
+      window.location.assign(`/evaluacion/${encodeURIComponent(candidateCode)}/gracias`);
+      return;
     }
     setMessage(`Aplicación recibida. Perfil descriptivo: ${results.globalScore ?? "—"}/100.`);
     setCandidateStage("thanks");

@@ -1,4 +1,4 @@
-import { batteryTestCatalog, defaultBattery } from "@/lib/psychometric-battery";
+import { batteryTestCatalog, defaultBattery, type BatteryAssignment } from "@/lib/psychometric-battery";
 import { supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
 
 function jsonError(message: string, status = 400) {
@@ -28,19 +28,20 @@ export async function POST(request: Request) {
   if (!supabaseIsConfigured()) return jsonError("La conexión segura de Supabase aún no está configurada.", 503);
   const user = await authenticatedUser(request);
   if (!user) return jsonError("Sesión de reclutador no válida.", 401);
-  const body = await request.json() as { action?: "create-battery" | "create-session"; name?: string; classification?: string; totalMinutes?: number; tests?: Array<{ testId: string; order: number; timeLimitSeconds: number }>; batteryId?: string };
+  const body = await request.json() as { action?: "create-battery" | "create-session"; name?: string; classification?: string; totalMinutes?: number; tests?: BatteryAssignment[]; batteryId?: string };
   try {
     if (body.action === "create-battery") {
       const requestedTests = Array.isArray(body.tests) ? body.tests : [];
       if (requestedTests.length === 0) return jsonError("Selecciona al menos una prueba para crear la batería.");
-      const requestedIds = requestedTests.map((test) => test.testId);
+      const requestedIds = requestedTests.map((test) => test.testId ?? test.prueba_id ?? "");
       const allowedIds = new Set(batteryTestCatalog.map((test) => test.id));
       const hasDuplicateTests = new Set(requestedIds).size !== requestedIds.length;
       const hasUnknownTests = requestedIds.some((testId) => !allowedIds.has(testId));
       if (requestedTests.length > 0 && (hasDuplicateTests || hasUnknownTests)) return jsonError("La batería contiene pruebas inválidas o duplicadas.");
       const totalMinutes = Number(body.totalMinutes ?? defaultBattery.totalMinutes);
       if (!Number.isFinite(totalMinutes) || totalMinutes < 1 || totalMinutes > 240) return jsonError("El tiempo total debe estar entre 1 y 240 minutos.");
-      const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: requestedTests, tiempo_total_min: totalMinutes }) });
+      const assignments = requestedTests.map((test, index) => { const testId = test.testId ?? test.prueba_id ?? ""; const seconds = test.timeLimitSeconds ?? test.tiempo_limite_seg ?? 900; return { prueba_id: testId, orden: test.orden ?? test.order ?? index + 1, tiempo_limite_seg: seconds, testId, order: test.orden ?? test.order ?? index + 1, timeLimitSeconds: seconds }; });
+      const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: assignments, tiempo_total_min: totalMinutes }) });
       return Response.json({ battery: battery[0] });
     }
     if (body.action === "create-session" && body.batteryId) {

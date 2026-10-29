@@ -11,6 +11,19 @@ export type PsychometricTest = {
   clinicalTestId?: string;
 };
 
+export type BatteryAssignment = {
+  testId?: string;
+  prueba_id?: string;
+  order?: number;
+  orden?: number;
+  timeLimitSeconds?: number;
+  tiempo_limite_seg?: number;
+};
+
+export function assignmentTestId(assignment: BatteryAssignment) {
+  return assignment.testId ?? assignment.prueba_id ?? "";
+}
+
 export type BatteryClassification = "1-A" | "1-B" | "2-A" | "2-B" | "3-A" | "3-B" | "3-C" | "3-D" | "PSIC-CLIN-INF" | "custom";
 
 export const clinicalPsychometricTests: PsychometricTest[] = Object.values(CATALOGO).map((test) => ({

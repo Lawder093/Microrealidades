@@ -1,9 +1,9 @@
-import { calculateConfiguredBatteryResult, getBatteryItems } from "@/lib/psychometric-battery";
+import { assignmentTestId, calculateConfiguredBatteryResult, getBatteryItems, type BatteryAssignment } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { supabaseIsConfigured, supabaseRest, supabaseStorageUpload } from "@/lib/supabase-rest";
 import { createEvaluationPdf } from "@/lib/evaluation-pdf";
 
-type SessionRow = { id: string; codigo: string; bateria_id: string; estado: string; candidato_nombre: string | null; candidato_edad: number | null; candidato_empresa: string | null; baterias: { nombre: string; pruebas: Array<{ testId: string; order: number; timeLimitSeconds: number }>; tiempo_total_min: number } | null };
+type SessionRow = { id: string; codigo: string; bateria_id: string; estado: string; candidato_nombre: string | null; candidato_edad: number | null; candidato_empresa: string | null; baterias: { nombre: string; pruebas: BatteryAssignment[]; tiempo_total_min: number } | null };
 
 function jsonError(message: string, status = 400) {
   return Response.json({ error: message }, { status });
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       if (!body.sessionId || body.sessionId !== session.id || !body.responses) return jsonError("Sesión o respuestas inválidas.");
       if (session.estado === "completado") return jsonError("Este código ya fue utilizado.", 409);
       if (session.estado !== "en_progreso") return jsonError("La sesión todavía no ha sido iniciada.", 409);
-      const testIds = session.baterias?.pruebas?.map((test) => test.testId) ?? [];
+      const testIds = session.baterias?.pruebas?.map(assignmentTestId).filter(Boolean) ?? [];
       const assignedItems = getBatteryItems(testIds);
       const assignedIds = new Set(assignedItems.map((item) => item.id));
       const responseIds = Object.keys(body.responses);
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
     }
 
     if (session.estado === "completado") return jsonError("Este código ya fue utilizado.", 409);
+    if (session.estado === "en_progreso") return jsonError("Esta sesión ya está en progreso y no puede abrirse de nuevo.", 409);
     await supabaseRest(`sesiones_evaluacion?id=eq.${encodeURIComponent(session.id)}`, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: JSON.stringify({ candidato_nombre: body.name?.trim() || null, candidato_edad: body.age || null, candidato_empresa: body.company?.trim() || null, estado: "en_progreso", iniciado_en: new Date().toISOString(), user_agent: request.headers.get("user-agent") }) });
     return Response.json({ sessionId: session.id, status: "en_progreso", battery: session.baterias });
   } catch (error) {
