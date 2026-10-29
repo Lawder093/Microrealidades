@@ -268,10 +268,13 @@ export function ProfessionalEvaluation() {
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
-    setItems(readStorage(itemsStorageKey, professionalEvaluationItems));
-    setApplications(readStorage(applicationsStorageKey, []));
-    setPhases(readStorage(calibrationStorageKey, initialPhases));
-    setStorageReady(true);
+    const timer = window.setTimeout(() => {
+      setItems(readStorage(itemsStorageKey, professionalEvaluationItems));
+      setApplications(readStorage(applicationsStorageKey, []));
+      setPhases(readStorage(calibrationStorageKey, initialPhases));
+      setStorageReady(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {

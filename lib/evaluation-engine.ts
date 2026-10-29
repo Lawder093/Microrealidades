@@ -1,4 +1,4 @@
-import type { EvaluationDimension, EvaluationItem } from "@/lib/evaluation-items";
+import type { EvaluationItem } from "@/lib/evaluation-items";
 
 export type ParticipantType = "therapist" | "candidate";
 

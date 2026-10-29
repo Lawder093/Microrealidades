@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { calculateConfiguredBatteryResult } from "@/lib/psychometric-battery";
 import type { Respuesta } from "@/lib/evaluacion/motor";
 import { evaluationDimensions, likertLabels, type EvaluationItem } from "@/lib/evaluation-items";
@@ -32,10 +33,12 @@ function DemoNotice() {
 }
 
 export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?: string } = {}) {
-  const [mode, setMode] = useState<SuperBatteryMode>(initialCandidateCode ? "candidate" : "home");
+  const searchParams = useSearchParams();
+  const resolvedCandidateCode = initialCandidateCode?.trim().toUpperCase() ?? searchParams.get("codigo")?.trim().toUpperCase() ?? "";
+  const [mode, setMode] = useState<SuperBatteryMode>(resolvedCandidateCode ? "candidate" : "home");
   const [candidateStage, setCandidateStage] = useState<CandidateStage>("access");
   const [candidateSessionId, setCandidateSessionId] = useState("");
-  const [candidateCode, setCandidateCode] = useState(initialCandidateCode?.trim().toUpperCase() ?? "");
+  const [candidateCode, setCandidateCode] = useState(resolvedCandidateCode);
   const [candidateName, setCandidateName] = useState("");
   const [candidateAge, setCandidateAge] = useState("");
   const [candidateCompany, setCandidateCompany] = useState("");
@@ -56,6 +59,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   const [batteries, setBatteries] = useState<DashboardBattery[]>([]);
   const [sessions, setSessions] = useState<DashboardSession[]>([]);
   const [demoCode, setDemoCode] = useState("");
+  const [demoSequence, setDemoSequence] = useState(0);
   const [shareLink, setShareLink] = useState("");
   const [message, setMessage] = useState("");
 
@@ -63,13 +67,18 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   const answered = candidateItems.filter((item) => candidateResponses[item.id] !== undefined).length;
   const progress = candidateItems.length ? Math.round((answered / candidateItems.length) * 100) : 0;
 
-  useEffect(() => {
-    const code = initialCandidateCode?.trim().toUpperCase() ?? new URLSearchParams(window.location.search).get("codigo")?.trim().toUpperCase();
-    if (code) {
-      setCandidateCode(code);
-      setMode("candidate");
+  const loadDashboard = useCallback(async (token = recruiterToken) => {
+    if (!hasSupabase || !token) return;
+    const response = await fetch("/api/evaluaciones/recruiter", { headers: { Authorization: `Bearer ${token}` } });
+    const data = await response.json() as { batteries?: DashboardBattery[]; sessions?: DashboardSession[]; error?: string };
+    if (!response.ok) {
+      setRecruiterError(data.error ?? "No se pudo cargar el dashboard.");
+      setMessage(data.error ?? "No se pudo cargar el dashboard.");
+      return;
     }
-  }, [initialCandidateCode]);
+    setBatteries(data.batteries ?? []);
+    setSessions(data.sessions ?? []);
+  }, [recruiterToken]);
 
   useEffect(() => {
     if (candidateStage !== "quiz") return undefined;
@@ -88,7 +97,7 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     if (mode !== "recruiter" || !recruiterToken) return undefined;
     const refresh = window.setInterval(() => { void loadDashboard(recruiterToken); }, 10000);
     return () => window.clearInterval(refresh);
-  }, [mode, recruiterToken]);
+  }, [loadDashboard, mode, recruiterToken]);
 
   async function recruiterLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,19 +117,6 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
     setRecruiterToken(data.access_token);
     setMode("recruiter");
     await loadDashboard(data.access_token);
-  }
-
-  async function loadDashboard(token = recruiterToken) {
-    if (!hasSupabase || !token) return;
-    const response = await fetch("/api/evaluaciones/recruiter", { headers: { Authorization: `Bearer ${token}` } });
-    const data = await response.json() as { batteries?: DashboardBattery[]; sessions?: DashboardSession[]; error?: string };
-    if (!response.ok) {
-      setRecruiterError(data.error ?? "No se pudo cargar el dashboard.");
-      setMessage(data.error ?? "No se pudo cargar el dashboard.");
-      return;
-    }
-    setBatteries(data.batteries ?? []);
-    setSessions(data.sessions ?? []);
   }
 
   function selectPreset(presetId: string) {
@@ -158,7 +154,8 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
   async function createCode(batteryId: string) {
     setMessage("");
     if (!hasSupabase || !recruiterToken) {
-      const code = `SB01-DEMO${String(Date.now()).slice(-4)}`;
+      const code = `SB01-DEMO${String(demoSequence + 1).padStart(4, "0")}`;
+      setDemoSequence((current) => current + 1);
       setDemoCode(code);
       setShareLink(`${window.location.origin}/evaluacion/${encodeURIComponent(code)}`);
       setMessage("Código de prueba generado. No abre una sesión real.");
