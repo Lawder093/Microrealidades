@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { SuperBattery01 } from "@/components/super-battery-01";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -16,7 +17,9 @@ export default function PsychometricEvaluationsPage() {
         <h1 id="psychometric-title">Evaluaciones<br /><em>Psicométricas.</em></h1>
         <p>Una primera herramienta para configurar baterías, generar códigos de aplicación y acompañar la revisión profesional de resultados.</p>
       </section>
-      <SuperBattery01 />
+      <Suspense fallback={<div className="super-battery-module" aria-busy="true"><p className="section-label">Preparando evaluaciones…</p></div>}>
+        <SuperBattery01 />
+      </Suspense>
       <SiteFooter />
     </main>
   );
