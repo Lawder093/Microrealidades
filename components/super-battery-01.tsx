@@ -77,7 +77,10 @@ export function SuperBattery01({ initialCandidateCode }: { initialCandidateCode?
       return;
     }
     setBatteries(data.batteries ?? []);
-    setSessions(data.sessions ?? []);
+    const nextSessions = data.sessions ?? [];
+    setSessions(nextSessions);
+    const pendingSession = nextSessions.find((session) => session.estado !== "completado" && session.estado !== "bloqueado");
+    if (pendingSession) setShareLink(`${window.location.origin}/evaluacion/${encodeURIComponent(pendingSession.codigo)}`);
   }, [recruiterToken]);
 
   useEffect(() => {
