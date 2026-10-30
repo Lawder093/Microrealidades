@@ -206,7 +206,7 @@ function addHeader(ops: string[], title: string, pageNumber: number, pageCount: 
 function makeSummaryPage(report: EvaluationPdfReport, tests: EvaluationPdfTest[], pageNumber: number, pageCount: number) {
   const ops: string[] = [];
   addHeader(ops, "Reporte de evaluación psicométrica", pageNumber, pageCount);
-  ops.push(textCommand(`Super batería 01 · ${report.classification || "Evaluación configurable"}`, LEFT, 679, 10, PINK, true));
+  ops.push(textCommand(`Microtalento · ${report.classification || "Evaluación configurable"}`, LEFT, 679, 10, PINK, true));
 
   const cardY = 550;
   ops.push(rectCommand(LEFT, cardY, CONTENT_WIDTH, 108, PALE));
@@ -358,7 +358,7 @@ function makeMethodPage(pageNumber: number, pageCount: number) {
   addHeader(ops, "Alcance y notas metodológicas", pageNumber, pageCount);
   let y = 664;
   const paragraphs = [
-    "Este reporte resume las respuestas registradas y las puntuaciones de la versión actual de Super batería 01. La documentación del proyecto describe inspiración conceptual en Big Five, DISC, códigos éticos profesionales, DSM-5 y BACB; los reactivos son originales, no reproducen ni adaptan instrumentos licenciados.",
+    "Este reporte resume las respuestas registradas y las puntuaciones de la versión actual de Microtalento. La documentación del proyecto describe inspiración conceptual en Big Five, DISC, códigos éticos profesionales, DSM-5 y BACB; los reactivos son originales, no reproducen ni adaptan instrumentos licenciados.",
     "El instrumento no cuenta aquí con evidencia documentada de validación, confiabilidad, normas poblacionales ni puntos de corte validados. Las bandas son referencias descriptivas definidas para este MVP y deben revisarse mediante revisión experta, piloto, análisis de ítems y estudios psicométricos antes de cualquier uso de alto impacto.",
     "Los resultados no constituyen diagnóstico, certificación de competencias, evaluación clínica integral ni recomendación automática de contratación. Deben interpretarse junto con entrevista, experiencia, referencias, supervisión y contexto pertinente por profesionales responsables.",
     "Las señales de tiempo y patrón uniforme son indicadores de revisión, no evidencia de respuesta al azar ni de fraude. El tiempo se reporta desde el navegador y no es una medida independiente. Algunas pruebas tienen claves concentradas en una opción, lo que puede producir falsos positivos. No se calculó una escala de consistencia personal validada.",

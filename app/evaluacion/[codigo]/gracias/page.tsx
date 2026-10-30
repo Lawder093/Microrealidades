@@ -2,7 +2,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata = {
-  title: "Gracias — Super batería 01",
+  title: "Gracias — Microtalento",
   description: "Confirmación de recepción de la evaluación.",
 };
 

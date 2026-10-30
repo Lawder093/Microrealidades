@@ -1,9 +1,10 @@
+import { Suspense } from "react";
 import { SuperBattery01 } from "@/components/super-battery-01";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata = {
-  title: "Evaluación — Super batería 01",
+  title: "Evaluación — Microtalento",
   description: "Aplicación privada de una batería psicométrica de Microrealidades.",
 };
 
@@ -11,12 +12,7 @@ export default function CandidateEvaluationPage({ params }: { params: { codigo: 
   return (
     <main className="inner-page psychometric-page">
       <SiteHeader compact />
-      <section className="page-intro psychometric-page-intro" aria-labelledby="candidate-evaluation-title">
-        <p className="section-label">[ 05 ] &nbsp; Aplicación privada</p>
-        <h1 id="candidate-evaluation-title">Tu evaluación<br /><em>comienza aquí.</em></h1>
-        <p>Responde la batería asignada por el equipo responsable. Esta liga es personal y de un solo uso.</p>
-      </section>
-      <SuperBattery01 initialCandidateCode={params.codigo} />
+      <Suspense fallback={<p aria-busy="true">Preparando Microtalento…</p>}><SuperBattery01 initialCandidateCode={params.codigo} /></Suspense>
       <SiteFooter />
     </main>
   );

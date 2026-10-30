@@ -41,7 +41,7 @@ export const batteryTestCatalog = clinicalPsychometricTests;
 
 export const defaultBattery = {
   id: "base-super-bateria-01",
-  name: "Super batería 01",
+  name: "Microtalento",
   classification: "custom" as BatteryClassification,
   tests: clinicalPsychometricTests.map((test, index) => ({ testId: test.id, order: index + 1, timeLimitSeconds: 900 })),
   totalMinutes: 150,

@@ -800,7 +800,7 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
    .evaluation-analysis{margin-top:55px}
  }
 
- /* Super batería 01 */
+ /* Microtalento */
  .psychometric-page-intro h1 em{color:var(--pink)}
  .super-battery-module{max-width:1400px;margin:0 auto;padding:0 0 20px}
  .super-battery-notice{display:flex;gap:12px;align-items:flex-start;margin-bottom:35px;padding:15px 18px;border:1px solid #dd316d70;background:#f8dbe4}
@@ -808,8 +808,8 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  .super-battery-notice p{margin:1px 0 0;color:#101114b8;font-size:12px;line-height:1.45}
  .super-battery-notice strong{color:var(--ink)}
  .super-battery-header{display:flex;justify-content:space-between;gap:45px;align-items:end;padding-bottom:48px;border-bottom:1px solid #10111440}
- .super-battery-header h2{margin:22px 0 22px;font-size:clamp(43px,6vw,90px);line-height:.85;letter-spacing:-.07em}
- .super-battery-header h2 em{color:var(--pink)}
+ .super-battery-header h1{margin:22px 0 22px;font-size:clamp(43px,6vw,90px);line-height:.85;letter-spacing:-.07em}
+ .super-battery-header h1 em{color:var(--pink)}
  .super-battery-header>div:first-child>p:last-child{max-width:650px;margin:0;color:#101114b5;font-size:17px;line-height:1.5}
  .super-battery-badge{display:grid;gap:7px;min-width:170px;padding:17px 0;border-top:1px solid #10111440;border-bottom:1px solid #10111440}
  .super-battery-badge span,.super-battery-badge small{color:#10111470;font:10px monospace;text-transform:uppercase;letter-spacing:.07em}
@@ -920,7 +920,7 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  @media(max-width:760px){
    .psychometric-page-intro h1{max-width:100%;font-size:clamp(48px,14vw,90px);overflow-wrap:break-word}
    .super-battery-header{display:block;padding-bottom:35px}
-   .super-battery-header h2{margin-top:56px;font-size:clamp(48px,15vw,84px)}
+   .super-battery-header h1{margin-top:56px;font-size:clamp(48px,15vw,84px)}
    .super-battery-badge{width:170px;margin-top:29px}
    .super-battery-entry-grid,.super-battery-admin-grid{grid-template-columns:1fr}
    .super-battery-entry{min-height:260px}
@@ -936,3 +936,24 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
    .super-battery-result-dimensions{grid-template-columns:1fr}
    .super-battery-results-head h4{font-size:24px}
  }
+
+/* Entrada directa de Microtalento */
+.microtalento-header{align-items:center;padding-top:48px;gap:24px}
+.microtalento-header h1{margin:20px 0 12px}
+.microtalento-recruiter-access{flex-shrink:0;padding:14px 20px;border:1px solid currentColor;border-radius:999px;min-height:44px}
+.super-battery-candidate-form{width:100%;box-sizing:border-box}
+.super-battery-candidate-form input{min-width:0;box-sizing:border-box;font-size:16px;min-height:48px}
+@media(max-width:600px){
+ .microtalento-header{align-items:flex-start;flex-direction:column;padding-top:28px;gap:12px}
+ .microtalento-header h1{font-size:clamp(42px,12vw,64px);letter-spacing:-.06em;overflow-wrap:anywhere}
+ .microtalento-recruiter-access{align-self:flex-start;font-size:11px}
+ .super-battery-candidate-form h3{font-size:clamp(34px,10vw,48px);line-height:1}
+ .super-battery-candidate-form{padding:24px 20px}
+ .super-battery-login{padding:24px 20px;margin:32px 0}
+ .super-battery-candidate-form .super-battery-action{min-height:48px}
+}
+.psychometric-page .super-battery-module{padding:0 5vw 20px}
+.microtalento-header .section-label{color:#ffffffb8}
+.microtalento-recruiter-access{color:var(--white);border-color:#ffffff80}
+.super-battery-candidate-form,.super-battery-login{color:var(--ink)}
+@media(max-width:600px){.microtalento-header{display:flex}.super-battery-candidate-form{margin-top:28px}}

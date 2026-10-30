@@ -1,5 +1,5 @@
 /**
- * Banco clínico infantil integrado a Super batería 01.
+ * Banco clínico infantil integrado a Microtalento.
  *
  * NOTA METODOLÓGICA: reactivos originales inspirados en constructos teóricos;
  * no reproducen instrumentos licenciados ni constituyen diagnóstico o baremo.
