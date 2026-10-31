@@ -1,0 +1,121 @@
+{
+  "sourceBytes": 4650816,
+  "sourceCenter": [
+    4.917383193969727e-7,
+    1.619218111038208,
+    -0.008782453835010529
+  ],
+  "sourceRadius": 0.139195247475627,
+  "variants": {
+    "desktop": {
+      "bytes": 1425420,
+      "triangles": 388640,
+      "primitives": 12,
+      "regions": {
+        "vessels": {
+          "before": 557023,
+          "after": 34955
+        },
+        "temporal": {
+          "before": 23128,
+          "after": 23128
+        },
+        "occipital": {
+          "before": 13860,
+          "after": 13860
+        },
+        "interior": {
+          "before": 73983,
+          "after": 44996
+        },
+        "parietal": {
+          "before": 5224,
+          "after": 5224
+        },
+        "frontal": {
+          "before": 18948,
+          "after": 18948
+        },
+        "nuclei": {
+          "before": 57724,
+          "after": 30532
+        },
+        "tracts": {
+          "before": 53757,
+          "after": 14999
+        },
+        "whiteMatter": {
+          "before": 277280,
+          "after": 100000
+        },
+        "ventricles": {
+          "before": 15907,
+          "after": 14999
+        },
+        "brainstem": {
+          "before": 42670,
+          "after": 31999
+        },
+        "cerebellum": {
+          "before": 144241,
+          "after": 55000
+        }
+      }
+    },
+    "mobile": {
+      "bytes": 841344,
+      "triangles": 212933,
+      "primitives": 12,
+      "regions": {
+        "vessels": {
+          "before": 557023,
+          "after": 18467
+        },
+        "temporal": {
+          "before": 23128,
+          "after": 17000
+        },
+        "occipital": {
+          "before": 13860,
+          "after": 9910
+        },
+        "interior": {
+          "before": 73983,
+          "after": 23135
+        },
+        "parietal": {
+          "before": 5224,
+          "after": 4000
+        },
+        "frontal": {
+          "before": 18948,
+          "after": 12997
+        },
+        "nuclei": {
+          "before": 57724,
+          "after": 27429
+        },
+        "tracts": {
+          "before": 53757,
+          "after": 7999
+        },
+        "whiteMatter": {
+          "before": 277280,
+          "after": 39998
+        },
+        "ventricles": {
+          "before": 15907,
+          "after": 7999
+        },
+        "brainstem": {
+          "before": 42670,
+          "after": 17999
+        },
+        "cerebellum": {
+          "before": 144241,
+          "after": 26000
+        }
+      }
+    }
+  }
+}

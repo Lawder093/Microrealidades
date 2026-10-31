@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Component, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { brainAnatomyLegend, type BrainFocus } from "@/components/brain/brain-anatomy";
 import { BrainFallback } from "@/components/brain/brain-fallback";
+import { chooseBrainQuality, type BrainQuality } from "@/components/brain/brain-quality";
 
 const BrainCanvas = dynamic(() => import("@/components/brain/brain-canvas").then((module) => module.BrainCanvas), {
   ssr: false,
@@ -25,7 +26,11 @@ class BrainErrorBoundary extends Component<{ children: ReactNode; fallback: Reac
 function hasWebGL() {
   try {
     const canvas = document.createElement("canvas");
-    return Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"));
+    const context = canvas.getContext("webgl2");
+    if (!context) return false;
+    // La sonda no debe retener un contexto adicional del navegador.
+    context.getExtension("WEBGL_lose_context")?.loseContext();
+    return true;
   } catch {
     return false;
   }
@@ -52,13 +57,37 @@ export function BrainExperience() {
   const [introComplete, setIntroComplete] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const [focusRegion, setFocusRegion] = useState<BrainFocus>("all");
+  const [quality, setQuality] = useState<BrainQuality | null>(null);
+  const [touchEnabled, setTouchEnabled] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+  const [inViewport, setInViewport] = useState(false);
+  const [pageVisible, setPageVisible] = useState(true);
+  const stage = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = stage.current;
+    if (!element) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      setInViewport(entry.isIntersecting);
+      if (!entry.isIntersecting) setTouchEnabled(false);
+    }, { threshold: 0.03 });
+    observer.observe(element);
+    const onVisibility = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     const updateMotionPreference = () => setReducedMotion(mediaQuery.matches);
     mediaQuery.addEventListener("change", updateMotionPreference);
 
-    const webglFrame = window.requestAnimationFrame(() => setWebglAvailable(hasWebGL()));
+    const webglFrame = window.requestAnimationFrame(() => {
+      const coarse = window.matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && window.matchMedia("(max-width: 900px)").matches);
+      // Elegir LOD antes de montar el loader: un móvil no descarga el GLB completo.
+      setQuality(chooseBrainQuality(coarse, navigator.hardwareConcurrency || 4));
+      setWebglAvailable(hasWebGL());
+    });
     const motionFrame = window.requestAnimationFrame(() => setReducedMotion(mediaQuery.matches));
     const introTimer = window.setTimeout(() => setIntroComplete(true), mediaQuery.matches ? 320 : 2650);
     return () => {
@@ -70,7 +99,9 @@ export function BrainExperience() {
   }, []);
 
   const handleModelReady = useCallback(() => setModelReady(true), []);
+  const handleFailure = useCallback(() => setWebglAvailable(false), []);
   const showFallback = webglAvailable === false;
+  const mobile = quality?.tier !== "desktop";
 
   return (
     <section className={`brain-experience${introComplete ? " is-intro-complete" : ""}${modelReady ? " is-model-ready" : ""}`} aria-labelledby="brain-experience-title">
@@ -86,16 +117,23 @@ export function BrainExperience() {
         {!introComplete && <button className="brain-skip-intro" type="button" onClick={() => setIntroComplete(true)}>Omitir introducción <span>↗</span></button>}
       </div>
 
-      <div className="brain-stage" role="group" aria-label="Cerebro humano 3D interactivo con actividad neuronal" aria-busy={webglAvailable === null || !modelReady}>
+      <div ref={stage} className="brain-stage" role="group" aria-label="Cerebro humano 3D interactivo con actividad neuronal" aria-busy={!showFallback && (webglAvailable === null || !modelReady)}>
         {showFallback ? (
           <BrainFallback />
-        ) : webglAvailable === null ? (
+        ) : webglAvailable === null || !quality ? (
           <BrainFallback compact />
         ) : (
           <BrainErrorBoundary fallback={<BrainFallback />}>
-            <BrainCanvas introComplete={introComplete} reducedMotion={reducedMotion} focusRegion={focusRegion} onModelReady={handleModelReady} />
+            <BrainCanvas introComplete={introComplete} reducedMotion={reducedMotion} focusRegion={focusRegion} onModelReady={handleModelReady}
+              quality={quality} active={inViewport && pageVisible} interactionEnabled={!mobile || touchEnabled} resetKey={resetKey} onFailure={handleFailure} />
           </BrainErrorBoundary>
         )}
+        {webglAvailable && quality && <div className="brain-view-controls" aria-label="Controles de la vista 3D">
+          {mobile && <button type="button" aria-pressed={touchEnabled} onClick={() => setTouchEnabled((value) => !value)}>{touchEnabled ? "Volver a desplazar" : "Activar giro y zoom"}</button>}
+          <button type="button" onClick={() => setResetKey((value) => value + 1)}>Restablecer vista</button>
+          {mobile && <span>{touchEnabled ? "Un dedo: girar · dos dedos: ampliar" : "Puedes desplazar la página. Activa el giro para explorar."}</span>}
+        </div>}
+        {showFallback && <p className="brain-fallback-status" role="status">La vista 3D no está disponible en este navegador. Puedes observar la representación estática.</p>}
         <div className="brain-entry-curtain" aria-hidden="true">
           <span className="brain-entry-pulse pulse-one" />
           <span className="brain-entry-pulse pulse-two" />

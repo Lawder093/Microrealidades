@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import type * as THREE from "three";
 
 export type BrainRegion =
   | "frontal"
@@ -54,14 +54,24 @@ function normalized(value: string) {
 }
 
 export function getSourceMaterialName(object: THREE.Object3D) {
-  if (!(object instanceof THREE.Mesh)) return "";
-  const material = Array.isArray(object.material) ? object.material[0] : object.material;
+  const mesh = object as THREE.Mesh;
+  if (!mesh.isMesh) return "";
+  const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
   return normalized(material?.name ?? "");
 }
 
-export function getBrainRegion(object: THREE.Object3D) {
-  const name = normalized(object.name);
-  const material = getSourceMaterialName(object);
+export function getBrainRegion(object: THREE.Object3D): BrainRegion {
+  const stored = object.userData.brainRegion as BrainRegion | undefined;
+  if (stored && brainRegionNames.includes(stored)) return stored;
+  return getBrainRegionFromNames(object.name, getSourceMaterialName(object));
+}
+
+export const brainRegionNames: BrainRegion[] = ["frontal", "parietal", "temporal", "occipital", "cerebellum", "whiteMatter", "nuclei", "ventricles", "brainstem", "tracts", "vessels", "support", "interior"];
+
+/** Compartido por el visor y el optimizador: las capas no dependen del LOD. */
+export function getBrainRegionFromNames(sourceName: string, materialName: string): BrainRegion {
+  const name = normalized(sourceName);
+  const material = normalized(materialName);
   const haystack = `${name} ${material}`;
 
   if (/artery|vein|sinus|nerve/.test(haystack)) return "vessels" as const;

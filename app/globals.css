@@ -502,7 +502,7 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  .brain-skip-intro:hover,.brain-skip-intro:focus-visible{color:var(--white)}
  .brain-stage{grid-column:2;grid-row:1/-1;position:relative;z-index:1;min-height:620px;margin:-18px 0 -18px}
  .brain-stage::before{content:"";position:absolute;z-index:0;inset:17% 7%;border-radius:50%;background:radial-gradient(ellipse,#5cc4bc20 0%,#dd316d12 37%,transparent 70%);filter:blur(22px);pointer-events:none}
- .brain-canvas{position:absolute!important;z-index:1;inset:0;width:100%!important;height:100%!important;touch-action:none}
+ .brain-canvas{position:absolute!important;z-index:1;inset:0;width:100%!important;height:100%!important;touch-action:pan-y}
  .brain-canvas>canvas{display:block;width:100%!important;height:100%!important;outline:none;cursor:grab}
  .brain-canvas>canvas:active{cursor:grabbing}
  .brain-fallback{position:absolute;z-index:1;inset:8%;display:grid;place-items:center;pointer-events:none}
@@ -565,7 +565,7 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  @media(prefers-reduced-motion:reduce){
    .brain-entry-curtain{transition-duration:.25s}
    .brain-entry-pulse{animation:none}
-   .brain-canvas{touch-action:none}
+   .brain-canvas{touch-action:pan-y}
  }
  /* Professional evaluation */
  .evaluation-page-intro{min-height:530px}
@@ -957,3 +957,15 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
 .microtalento-recruiter-access{color:var(--white);border-color:#ffffff80}
 .super-battery-candidate-form,.super-battery-login{color:var(--ink)}
 @media(max-width:600px){.microtalento-header{display:flex}.super-battery-candidate-form{margin-top:28px}}
+
+/* Controles locales del holograma: scroll nativo hasta activar el gesto táctil. */
+.brain-canvas{touch-action:pan-y!important}
+.brain-canvas>canvas{touch-action:pan-y}
+.brain-view-controls{position:absolute;z-index:5;top:48px;left:12px;right:12px;display:flex;justify-content:center;flex-wrap:wrap;gap:8px;pointer-events:none}
+.brain-view-controls button{pointer-events:auto;min-height:44px;padding:9px 13px;border:1px solid #ffffff40;border-radius:3px;background:#101114c9;color:var(--white);font:10px monospace;cursor:pointer;backdrop-filter:blur(8px)}
+.brain-view-controls button:hover,.brain-view-controls button:focus-visible{border-color:var(--yellow);outline:2px solid transparent}
+.brain-view-controls button[aria-pressed=true]{border-color:#75c9c4;color:#a3e9df}
+.brain-view-controls span{flex-basis:100%;text-align:center;color:#ffffffa8;font:9px/1.5 monospace}
+.brain-fallback-status{position:absolute;z-index:4;left:8%;right:8%;bottom:12%;color:#ffffffa8;text-align:center;font:12px/1.5 Arial,Helvetica,sans-serif}
+@media(max-width:760px){.brain-view-controls{top:12px}.brain-stage{min-height:410px}.brain-view-controls button{font-size:10px}}
+@media(max-width:760px) and (orientation:landscape){.brain-stage{height:80svh;min-height:330px}}

@@ -1,87 +1,90 @@
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
+/** OrbitControls nativo de Three, sin otra dependencia para el bundle móvil. */
 export class BrainInteractionController {
+  readonly controls: OrbitControls;
   private dragging = false;
-  private pointerId: number | null = null;
-  private lastPointer = { x: 0, y: 0, time: 0 };
-  private desiredRotation = { x: 0, y: 0 };
-  private velocity = { x: 0, y: 0 };
-  private resumeAutoRotationAt = 0;
+  private updating = false;
+  private settleUntil = 0;
+  private resumeAt = performance.now() + 3200;
+  private fitDistance = 6;
+  private modelRadius = 1.35;
+  private readonly homeDirection = new THREE.Vector3(2.7, 1.2, 4.7).normalize();
+  private readonly start = () => { this.dragging = true; this.resumeAt = Infinity; this.wake(); };
+  private readonly end = () => { this.dragging = false; this.settleUntil = performance.now() + 1200; this.resumeAt = performance.now() + 4000; this.wake(); };
+  private readonly change = () => { if (!this.updating) this.wake(); };
 
-  constructor(
-    private readonly element: HTMLCanvasElement,
-    private readonly camera: THREE.PerspectiveCamera,
-    private readonly reducedMotion: boolean,
-  ) {}
+  constructor(private readonly element: HTMLCanvasElement, private readonly camera: THREE.PerspectiveCamera, private readonly reducedMotion: boolean, private readonly wake: () => void, radius = 1.35) {
+    this.modelRadius = radius;
+    this.controls = new OrbitControls(camera, element);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.085;
+    this.controls.enablePan = false;
+    this.controls.rotateSpeed = 0.65;
+    this.controls.zoomSpeed = 0.65;
+    this.controls.minPolarAngle = 0.06;
+    this.controls.maxPolarAngle = Math.PI - 0.06;
+    this.controls.autoRotateSpeed = 0.2;
+    this.controls.touches.ONE = THREE.TOUCH.ROTATE;
+    this.controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+    this.controls.addEventListener("start", this.start);
+    this.controls.addEventListener("end", this.end);
+    this.controls.addEventListener("change", this.change);
+  }
 
-  private readonly handlePointerDown = (event: PointerEvent) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    this.dragging = true;
-    this.pointerId = event.pointerId;
-    this.lastPointer = { x: event.clientX, y: event.clientY, time: performance.now() };
-    this.velocity = { x: 0, y: 0 };
-    this.resumeAutoRotationAt = Number.POSITIVE_INFINITY;
-    this.element.setPointerCapture?.(event.pointerId);
-  };
+  setEnabled(enabled: boolean) {
+    this.controls.enabled = enabled;
+    // El modo táctil se activa ANTES de iniciar el gesto, no a mitad del arrastre.
+    this.element.style.touchAction = enabled ? "none" : "pan-y";
+    if (!enabled) this.dragging = false;
+  }
 
-  private readonly handlePointerMove = (event: PointerEvent) => {
-    if (!this.dragging || this.pointerId !== event.pointerId) return;
-    const now = performance.now();
-    const elapsed = Math.max(now - this.lastPointer.time, 8) / 1000;
-    const horizontalDelta = (event.clientX - this.lastPointer.x) * 0.008;
-    const verticalDelta = (event.clientY - this.lastPointer.y) * 0.0045;
-    this.desiredRotation.y += horizontalDelta;
-    this.desiredRotation.x = THREE.MathUtils.clamp(this.desiredRotation.x + verticalDelta, -0.48, 0.48);
-    this.velocity.y = horizontalDelta / elapsed;
-    this.velocity.x = verticalDelta / elapsed;
-    this.lastPointer = { x: event.clientX, y: event.clientY, time: now };
-  };
+  resize(width: number, height: number) {
+    const old = this.fitDistance;
+    const halfVertical = THREE.MathUtils.degToRad(this.camera.fov / 2);
+    const halfHorizontal = Math.atan(Math.tan(halfVertical) * width / Math.max(height, 1));
+    this.fitDistance = this.modelRadius / Math.sin(Math.min(halfVertical, halfHorizontal)) * 1.12;
+    this.controls.minDistance = this.fitDistance * 0.72;
+    this.controls.maxDistance = this.fitDistance * 1.75;
+    const ratio = old ? THREE.MathUtils.clamp(this.camera.position.length() / old, 0.72, 1.75) : 1;
+    this.camera.position.normalize().multiplyScalar(this.fitDistance * ratio);
+    this.camera.near = 0.05;
+    this.camera.far = 60;
+    this.camera.updateProjectionMatrix();
+    this.wake();
+  }
 
-  private readonly stopDragging = (event: PointerEvent) => {
-    if (this.pointerId !== event.pointerId) return;
-    this.dragging = false;
-    this.pointerId = null;
-    this.resumeAutoRotationAt = performance.now() + 1800;
-    if (this.element.hasPointerCapture?.(event.pointerId)) this.element.releasePointerCapture(event.pointerId);
-  };
+  fit(radius: number, width: number, height: number) {
+    this.modelRadius = Math.max(radius, 0.1);
+    this.resize(width, height);
+    this.reset();
+  }
 
-  private readonly handleWheel = (event: WheelEvent) => {
-    event.preventDefault();
-    const nextDistance = THREE.MathUtils.clamp(this.camera.position.z + event.deltaY * 0.0025, 3.25, 5.8);
-    this.camera.position.z = THREE.MathUtils.damp(this.camera.position.z, nextDistance, 10, 0.16);
-    this.resumeAutoRotationAt = performance.now() + 1200;
-  };
+  reset() {
+    this.controls.reset();
+    this.controls.target.set(0, 0, 0);
+    this.camera.position.copy(this.homeDirection).multiplyScalar(this.fitDistance);
+    this.camera.lookAt(0, 0, 0);
+    this.settleUntil = performance.now() + 1200;
+    this.resumeAt = performance.now() + 4000;
+    this.wake();
+  }
 
-  attach() {
-    this.element.addEventListener("pointerdown", this.handlePointerDown);
-    this.element.addEventListener("pointermove", this.handlePointerMove);
-    this.element.addEventListener("pointerup", this.stopDragging);
-    this.element.addEventListener("pointercancel", this.stopDragging);
-    this.element.addEventListener("wheel", this.handleWheel, { passive: false });
+  get needsFrame() { return this.dragging || performance.now() < this.settleUntil; }
+
+  update(delta: number) {
+    this.controls.autoRotate = !this.reducedMotion && !this.dragging && performance.now() >= this.resumeAt;
+    this.updating = true;
+    this.controls.update(Math.min(delta, 0.05));
+    this.updating = false;
   }
 
   dispose() {
-    this.element.removeEventListener("pointerdown", this.handlePointerDown);
-    this.element.removeEventListener("pointermove", this.handlePointerMove);
-    this.element.removeEventListener("pointerup", this.stopDragging);
-    this.element.removeEventListener("pointercancel", this.stopDragging);
-    this.element.removeEventListener("wheel", this.handleWheel);
-  }
-
-  update(group: THREE.Group, delta: number) {
-    if (!this.dragging) {
-      this.desiredRotation.x = THREE.MathUtils.damp(this.desiredRotation.x, 0, 2.2, delta);
-      if (performance.now() < this.resumeAutoRotationAt) {
-        this.desiredRotation.y += this.velocity.y * delta;
-        this.desiredRotation.x += this.velocity.x * delta;
-        this.velocity.x = THREE.MathUtils.damp(this.velocity.x, 0, 7, delta);
-        this.velocity.y = THREE.MathUtils.damp(this.velocity.y, 0, 7, delta);
-      } else if (!this.reducedMotion) {
-        this.desiredRotation.y += delta * 0.09;
-      }
-    }
-
-    group.rotation.x = THREE.MathUtils.damp(group.rotation.x, this.desiredRotation.x, 12, delta);
-    group.rotation.y = THREE.MathUtils.damp(group.rotation.y, this.desiredRotation.y, 12, delta);
+    this.controls.removeEventListener("start", this.start);
+    this.controls.removeEventListener("end", this.end);
+    this.controls.removeEventListener("change", this.change);
+    this.controls.dispose();
+    this.element.style.touchAction = "pan-y";
   }
 }
