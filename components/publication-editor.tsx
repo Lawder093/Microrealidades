@@ -75,9 +75,10 @@ function sanitizeArticleHtml(html: string) {
 }
 
 function htmlToText(html: string) {
-  if (typeof DOMParser === "undefined") return html.replace(/<[^>]+>/g, " ");
-  const document = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
-  return document.body.textContent || "";
+  // El mismo texto en SSR y navegador evita diferencias en el contador al hidratar.
+  return html.replace(/<(br|\/(?:p|div|h[1-6]|li|ul|ol|blockquote))\b[^>]*>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&(?:nbsp|#160|#xa0);/gi, " ");
 }
 
 function citationKey(citation: CitationDraft) {
@@ -102,6 +103,9 @@ function ToolbarButton({ label, title, onClick, children }: { label: string; tit
 
 export function PublicationEditor() {
   const editorRef = useRef<HTMLDivElement>(null);
+  const citationButton = useRef<HTMLButtonElement>(null);
+  const citationDialog = useRef<HTMLDivElement>(null);
+  const citationBackdrop = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -159,12 +163,51 @@ export function PublicationEditor() {
   }, [abstract, affiliation, author, citations, contentHtml, isReady, keywords, subtitle, title]);
 
   useEffect(() => {
+    const editor = editorRef.current;
+    // Escribir solo al restaurar/reiniciar: no reconstruir el DOM bajo el cursor o el teclado IME.
+    if (editor && editor.innerHTML !== contentHtml) editor.innerHTML = contentHtml;
+  }, [contentHtml, previewMode]);
+
+  useEffect(() => {
     if (!citationOpen) return;
-    function closeWithEscape(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") setCitationOpen(false);
+    const previousOverflow = document.body.style.overflow;
+    const opener = citationButton.current;
+    document.body.style.overflow = "hidden";
+    const viewport = window.visualViewport;
+    // El viewport visual se reduce al abrir el teclado de iOS/Android.
+    const fitKeyboard = () => {
+      if (!viewport || !citationBackdrop.current) return;
+      citationBackdrop.current.style.setProperty("--citation-viewport-height", `${viewport.height}px`);
+      citationBackdrop.current.style.setProperty("--citation-viewport-top", `${viewport.offsetTop}px`);
+    };
+    fitKeyboard();
+    viewport?.addEventListener("resize", fitKeyboard);
+    viewport?.addEventListener("scroll", fitKeyboard);
+    function handleDialogKey(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setCitationOpen(false);
+      }
+      if (event.key !== "Tab") return;
+      const controls = Array.from(citationDialog.current?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])") ?? []).filter((control) => control.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
     }
-    window.addEventListener("keydown", closeWithEscape);
-    return () => window.removeEventListener("keydown", closeWithEscape);
+    window.addEventListener("keydown", handleDialogKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      viewport?.removeEventListener("resize", fitKeyboard);
+      viewport?.removeEventListener("scroll", fitKeyboard);
+      window.removeEventListener("keydown", handleDialogKey);
+      if (document.activeElement === document.body && opener?.isConnected) opener.focus({ preventScroll: true });
+    };
   }, [citationOpen]);
 
   const references = useMemo(() => [...citations].sort((first, second) => citationKey(first).localeCompare(citationKey(second))), [citations]);
@@ -377,6 +420,7 @@ export function PublicationEditor() {
               <div className="publication-paper-title-preview">{title || "El título aparecerá aquí"}</div>
               <div className="publication-paper-author-preview">{author || "Autoría pendiente"}{affiliation && ` · ${affiliation}`}</div>
               <div className="publication-editor-toolbar" role="toolbar" aria-label="Herramientas de formato">
+                <div className="publication-format-tools">
                 <ToolbarButton label="Negritas" title="Negritas (⌘/Ctrl + B)" onClick={() => runCommand("bold")}><strong>B</strong></ToolbarButton>
                 <ToolbarButton label="Cursivas" title="Cursivas (⌘/Ctrl + I)" onClick={() => runCommand("italic")}><em>I</em></ToolbarButton>
                 <span className="publication-tool-divider" aria-hidden="true" />
@@ -389,7 +433,8 @@ export function PublicationEditor() {
                 <span className="publication-tool-divider" aria-hidden="true" />
                 <ToolbarButton label="Deshacer" title="Deshacer" onClick={() => runCommand("undo")}>↶</ToolbarButton>
                 <ToolbarButton label="Rehacer" title="Rehacer" onClick={() => runCommand("redo")}>↷</ToolbarButton>
-                <button className="publication-citation-button" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openCitationDialog}><span aria-hidden="true">＋</span> Insertar cita</button>
+                </div>
+                <button ref={citationButton} className="publication-citation-button" type="button" onMouseDown={(event) => event.preventDefault()} onClick={openCitationDialog}><span aria-hidden="true">＋</span> Insertar cita</button>
               </div>
               <div
                 ref={editorRef}
@@ -399,7 +444,6 @@ export function PublicationEditor() {
                 aria-label="Cuerpo del artículo"
                 aria-multiline="true"
                 suppressContentEditableWarning
-                dangerouslySetInnerHTML={{ __html: contentHtml }}
                 onInput={handleEditorInput}
                 onBeforeInput={blockBeforeInput}
                 onPaste={(event) => blockClipboard(event, "Pegar")}
@@ -436,8 +480,8 @@ export function PublicationEditor() {
       </div>
 
       {citationOpen && (
-        <div className="citation-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCitationOpen(false); }}>
-          <div className="citation-dialog" role="dialog" aria-modal="true" aria-labelledby="citation-dialog-title">
+        <div ref={citationBackdrop} className="citation-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCitationOpen(false); }}>
+          <div ref={citationDialog} className="citation-dialog" role="dialog" aria-modal="true" aria-labelledby="citation-dialog-title">
             <div className="citation-dialog-header"><div><p className="section-label">Fuente nueva</p><h2 id="citation-dialog-title">Insertar <em>cita.</em></h2></div><button className="citation-dialog-close" type="button" onClick={() => setCitationOpen(false)} aria-label="Cerrar ventana">×</button></div>
             <p className="citation-dialog-intro">Aquí sí puedes pegar el fragmento original. La fuente necesita datos suficientes para generar una referencia APA 7 confiable.</p>
             <form onSubmit={handleCitationSubmit}>
@@ -446,13 +490,13 @@ export function PublicationEditor() {
                 <label><FieldLabel>Tipo de fuente</FieldLabel><select value={citationDraft.sourceType} onChange={(event) => updateCitation("sourceType", event.target.value as SourceType)} {...blockedFieldProps()}>{SOURCE_TYPES.map((source) => <option value={source.id} key={source.id}>{source.label}</option>)}</select></label>
                 <label><FieldLabel>Autoría</FieldLabel><input type="text" value={citationDraft.author} onChange={(event) => updateCitation("author", event.target.value)} placeholder="Apellido, N. N." {...blockedFieldProps()} /></label>
                 <label><FieldLabel>Año</FieldLabel><input type="text" inputMode="numeric" value={citationDraft.year} onChange={(event) => updateCitation("year", event.target.value)} placeholder="2026" maxLength={4} {...blockedFieldProps()} /></label>
-                <label><FieldLabel optional>Página o párrafo</FieldLabel><input type="text" value={citationDraft.page} onChange={(event) => updateCitation("page", event.target.value)} placeholder="18 o párr. 4" {...blockedFieldProps()} /></label>
+                <label><FieldLabel optional={!citationDraft.quote.trim()}>Página o párrafo</FieldLabel><input type="text" value={citationDraft.page} onChange={(event) => updateCitation("page", event.target.value)} placeholder="18 o párr. 4" {...blockedFieldProps()} /></label>
                 <label className="citation-form-wide"><FieldLabel>Título de la fuente</FieldLabel><input type="text" value={citationDraft.title} onChange={(event) => updateCitation("title", event.target.value)} placeholder="Título del artículo, capítulo o página" {...blockedFieldProps()} /></label>
                 {(citationDraft.sourceType === "article" || citationDraft.sourceType === "chapter" || citationDraft.sourceType === "webpage") && <label className="citation-form-wide"><FieldLabel>{citationDraft.sourceType === "article" ? "Revista" : citationDraft.sourceType === "chapter" ? "Libro o compilación" : "Sitio web"}</FieldLabel><input type="text" value={citationDraft.containerTitle} onChange={(event) => updateCitation("containerTitle", event.target.value)} placeholder={citationDraft.sourceType === "article" ? "Nombre de la revista" : "Nombre de la publicación"} {...blockedFieldProps()} /></label>}
                 {citationDraft.sourceType === "article" && <><label><FieldLabel optional>Volumen</FieldLabel><input type="text" value={citationDraft.volume} onChange={(event) => updateCitation("volume", event.target.value)} placeholder="12" {...blockedFieldProps()} /></label><label><FieldLabel optional>Número</FieldLabel><input type="text" value={citationDraft.issue} onChange={(event) => updateCitation("issue", event.target.value)} placeholder="2" {...blockedFieldProps()} /></label><label><FieldLabel optional>Páginas</FieldLabel><input type="text" value={citationDraft.pages} onChange={(event) => updateCitation("pages", event.target.value)} placeholder="30–46" {...blockedFieldProps()} /></label></>}
                 {(citationDraft.sourceType === "book" || citationDraft.sourceType === "chapter") && <label className="citation-form-wide"><FieldLabel>{citationDraft.sourceType === "book" ? "Editorial" : "Editorial o institución"}</FieldLabel><input type="text" value={citationDraft.publisher} onChange={(event) => updateCitation("publisher", event.target.value)} placeholder="Editorial o institución" {...blockedFieldProps()} /></label>}
                 <label><FieldLabel optional>DOI</FieldLabel><input type="text" value={citationDraft.doi} onChange={(event) => updateCitation("doi", event.target.value)} placeholder="10.xxxx/xxxxx" {...blockedFieldProps()} /></label>
-                <label><FieldLabel optional>URL</FieldLabel><input type="url" value={citationDraft.url} onChange={(event) => updateCitation("url", event.target.value)} placeholder="https://…" {...blockedFieldProps()} /></label>
+                <label><FieldLabel optional={citationDraft.sourceType !== "webpage" || Boolean(citationDraft.doi.trim())}>URL</FieldLabel><input type="url" value={citationDraft.url} onChange={(event) => updateCitation("url", event.target.value)} placeholder="https://…" {...blockedFieldProps()} /></label>
               </div>
               <div className="citation-live-preview"><span>Vista previa</span><strong>{formatInTextCitation(citationDraft)}</strong><p>{labelForSource(citationDraft.sourceType)} · {citationDraft.title || "Título pendiente"}</p></div>
               {missingCitationFields.length > 0 && <p className="citation-dialog-field-note">Campos pendientes: {missingCitationFields.join(", ")}.</p>}

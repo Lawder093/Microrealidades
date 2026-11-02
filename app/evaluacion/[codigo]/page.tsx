@@ -8,11 +8,12 @@ export const metadata = {
   description: "Aplicación privada de una batería psicométrica de Microrealidades.",
 };
 
-export default function CandidateEvaluationPage({ params }: { params: { codigo: string } }) {
+export default async function CandidateEvaluationPage({ params }: { params: Promise<{ codigo: string }> }) {
+  const { codigo } = await params;
   return (
     <main className="inner-page psychometric-page">
       <SiteHeader compact />
-      <Suspense fallback={<p aria-busy="true">Preparando Microtalento…</p>}><SuperBattery01 initialCandidateCode={params.codigo} /></Suspense>
+      <Suspense fallback={<p aria-busy="true">Preparando Microtalento…</p>}><SuperBattery01 initialCandidateCode={codigo} /></Suspense>
       <SiteFooter />
     </main>
   );
