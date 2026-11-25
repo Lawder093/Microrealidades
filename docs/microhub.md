@@ -1,5 +1,7 @@
 # Microhub
 
+> El prototipo de la rama `microhub-001` añade MicroID, instituciones y acceso a módulos mediante contratos. La instalación y administración actualizada están en la [guía Ecosystem Core](ecosystem-core.md).
+
 - `/microhub`: herramientas y acceso a la cuenta.
 - `/microhub/evaluaciones`: dashboard de Microtalento; requiere sesión.
 - `/microhub/expediente`: expediente de demostración con datos simulados.

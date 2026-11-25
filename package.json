@@ -12,7 +12,10 @@
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern public/draco",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
+    "test:ecosystem": "node --test tests/ecosystem-*.test.mjs",
+    "test:ecosystem:e2e": "node scripts/verify-ecosystem-e2e.mjs",
+    "preview:prepare": "node scripts/prepare-ecosystem-preview.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

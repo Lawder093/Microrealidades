@@ -7,3 +7,4 @@ dist
 .wrangler
 .sites-runtime
 *.tsbuildinfo
+.ecosystem-preview

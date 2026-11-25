@@ -1,5 +1,7 @@
 # Tu dashboard super root
 
+> En el prototipo Ecosystem Core, `/microhub/admin` es MicroAdmin. El gestor editorial está en `/publicaciones/gestor` y admite autores y editores independientes de MicroHub. Ver [guía del sprint](ecosystem-core.md).
+
 Acceso: `/microhub/admin`, usando la misma cuenta e inicio de sesión de Microhub. El enlace también aparece en Microhub cuando esa cuenta tiene permiso.
 
 El sistema adapta el flujo editorial de ScoutWeb/Escultista: crear, editar, previsualizar, guardar borradores, subir portada, publicar, despublicar y consultar el archivo. Las entradas se pueden archivar y restaurar. Las publicaciones públicas viven en `/publicaciones/[slug]`; `/blog` redirige a Publicaciones. El editor comunitario con citas APA se conserva.
