@@ -24,7 +24,7 @@ export function microhubReturnPath(value: string | null): string {
   if (!value || /[\\\u0000-\u001f]/.test(value)) return "/microhub";
   try {
     const url = new URL(value, "https://microhub.local");
-    if (url.origin !== "https://microhub.local" || !(url.pathname === "/microhub" || url.pathname.startsWith("/microhub/"))) return "/microhub";
+    if (url.origin !== "https://microhub.local" || !(["/microhub", "/micro-id"].some((root) => url.pathname === root || url.pathname.startsWith(`${root}/`)) || url.pathname === "/publicaciones/gestor")) return "/microhub";
     return `${url.pathname}${url.search}${url.hash}`;
   } catch { return "/microhub"; }
 }
@@ -43,12 +43,12 @@ export class MicrohubAuthError extends Error {
   constructor(message: string, public readonly status: number) { super(message); }
 }
 
-export async function microhubAuthRequest(path: string, body?: Record<string, unknown>, token?: string): Promise<AuthResponse> {
+export async function microhubAuthRequest(path: string, body?: Record<string, unknown>, token?: string, method?: "PUT"): Promise<AuthResponse> {
   if (!authUrl || !publicKey) throw new MicrohubAuthError("El acceso a Microhub aún no está configurado. Intenta más tarde.", 503);
   let response: Response;
   try {
     response = await fetch(`${authUrl}/auth/v1/${path}`, {
-      method: body ? "POST" : "GET",
+      method: method ?? (body ? "POST" : "GET"),
       headers: { apikey: publicKey, "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}), cache: "no-store",
     });

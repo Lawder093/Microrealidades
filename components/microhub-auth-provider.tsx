@@ -7,7 +7,9 @@ type MicrohubAuth = {
   session: MicrohubSession | null; loading: boolean; configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (name: string, email: string, password: string) => Promise<boolean>;
-  signOut: () => Promise<void>;
+  signOut: (all?: boolean) => Promise<void>;
+  recoverPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   confirm: (params: URLSearchParams) => Promise<void>;
   authFetch: (input: string, init?: RequestInit) => Promise<Response>;
 };
@@ -100,10 +102,10 @@ export function MicrohubAuthProvider({ children }: { children: ReactNode }) {
     return Boolean(next);
   }, [store]);
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (all = false) => {
     const token = currentSession.current?.access_token;
     generation.current += 1; store(null);
-    if (token) await microhubAuthRequest("logout?scope=local", {}, token).catch(() => undefined);
+    if (token) await microhubAuthRequest(`logout?scope=${all ? "global" : "local"}`, {}, token).catch(() => undefined);
   }, [store]);
 
   const confirm = useCallback(async (params: URLSearchParams) => {
@@ -111,7 +113,7 @@ export function MicrohubAuthProvider({ children }: { children: ReactNode }) {
     let next: MicrohubSession | null = null;
     if (params.get("token_hash")) {
       const type = params.get("type");
-      if (type !== "signup" && type !== "email") throw new Error("Este enlace no corresponde a una confirmación de cuenta.");
+      if (!["signup", "email", "recovery", "magiclink", "invite"].includes(type ?? "")) throw new Error("Este enlace no corresponde a una confirmación de cuenta.");
       next = readMicrohubSession(await microhubAuthRequest("verify", { token_hash: params.get("token_hash"), type }));
     } else if (params.get("refresh_token")) {
       // Intercambiar el token valida el enlace antes de persistir la sesión.
@@ -120,6 +122,16 @@ export function MicrohubAuthProvider({ children }: { children: ReactNode }) {
     if (!next) throw new Error("No encontramos una confirmación válida. Si ya confirmaste tu correo, inicia sesión.");
     generation.current += 1; store(next);
   }, [store]);
+
+  const recoverPassword = useCallback(async (email: string) => {
+    await microhubAuthRequest(`recover?redirect_to=${encodeURIComponent(`${window.location.origin}/micro-id/recuperar`)}`, { email: email.trim() });
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const active = currentSession.current;
+    if (!active) throw new Error("Abre el enlace de recuperación o inicia sesión.");
+    await microhubAuthRequest("user", { password }, active.access_token, "PUT");
+  }, []);
 
   const authFetch = useCallback(async (input: string, init: RequestInit = {}) => {
     let active = currentSession.current;
@@ -132,7 +144,7 @@ export function MicrohubAuthProvider({ children }: { children: ReactNode }) {
     return renewed ? send(renewed.access_token) : response;
   }, [refreshSession]);
 
-  return <AuthContext.Provider value={{ session, loading, configured: microhubAuthConfigured, signIn, signUp, signOut, confirm, authFetch }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ session, loading, configured: microhubAuthConfigured, signIn, signUp, signOut, confirm, recoverPassword, updatePassword, authFetch }}>{children}</AuthContext.Provider>;
 }
 
 export function useMicrohubAuth(): MicrohubAuth {

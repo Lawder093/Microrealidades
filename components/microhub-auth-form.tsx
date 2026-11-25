@@ -48,6 +48,7 @@ export function MicrohubAuthForm({ register = false }: { register?: boolean }) {
     {register && <><p id="microhub-password-help">Usa al menos 8 caracteres. Solo pedimos los datos necesarios para crear tu acceso.</p><label>Confirmar contraseña<input type="password" autoComplete="new-password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} required minLength={8} maxLength={128} /></label></>}
     {error && <p className="super-battery-error" role="alert">{error}</p>}
     <button className="super-battery-action" type="submit" disabled={pending || !configured}>{pending ? "Un momento…" : register ? "Crear cuenta ↗" : "Iniciar sesión ↗"}</button>
+    {!register && <Link prefetch={false} className="microhub-text-link" href="/micro-id/recuperar">Recuperar contraseña</Link>}
     <p>{register ? "¿Ya tienes cuenta?" : "¿Es tu primera vez?"} <Link prefetch={false} className="microhub-text-link" href={`${register ? "/ingresar" : "/registro"}?next=${encodeURIComponent(next)}`}>{register ? "Inicia sesión" : "Crea tu cuenta"} ↗</Link></p>
   </form>;
 }
