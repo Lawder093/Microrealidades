@@ -8,6 +8,9 @@ import { buildEvaluationPdfTests, createEvaluationFolioHash } from "@/lib/evalua
 type SecurityEventType = "refresh" | "tab_change" | "copy" | "paste" | "blur" | "right_click";
 type SessionRow = {
   id: string;
+  organization_id: string;
+  workspace_id: string;
+  access_token: string | null;
   codigo: string;
   bateria_id: string;
   estado: string;
@@ -45,14 +48,14 @@ function resumeCookie(name: string, token: string) {
 }
 
 async function getSessionByCode(code: string) {
-  const select = "id,codigo,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,reanudacion_token,baterias(nombre,clasificacion_puesto,pruebas,tiempo_total_min)";
+  const select = "id,codigo,organization_id,workspace_id,access_token,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,reanudacion_token,baterias(nombre,clasificacion_puesto,pruebas,tiempo_total_min)";
   try {
     const sessions = await supabaseRest<SessionRow[]>(`sesiones_evaluacion?codigo=eq.${encodeURIComponent(code)}&select=${select}&limit=1`);
     return { session: sessions[0], hasResumeColumn: true };
   } catch (error) {
     // Compatibilidad con proyectos que todavía no ejecutaron la migración de reanudación.
     if (!(error instanceof Error && error.message.includes("400"))) throw error;
-    const fallbackSelect = "id,codigo,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,baterias(nombre,clasificacion_puesto,pruebas,tiempo_total_min)";
+    const fallbackSelect = "id,codigo,organization_id,workspace_id,access_token,bateria_id,estado,candidato_nombre,candidato_edad,candidato_empresa,iniciado_en,baterias(nombre,clasificacion_puesto,pruebas,tiempo_total_min)";
     const sessions = await supabaseRest<SessionRow[]>(`sesiones_evaluacion?codigo=eq.${encodeURIComponent(code)}&select=${fallbackSelect}&limit=1`);
     return { session: sessions[0], hasResumeColumn: false };
   }
@@ -85,6 +88,7 @@ function interpretationEntries(results: ReturnType<typeof calculateConfiguredBat
 export async function POST(request: Request) {
   if (!supabaseIsConfigured()) return jsonError(supabaseConfigurationError() ?? "La conexión segura de Supabase aún no está configurada.", 503);
   let body: {
+    accessToken?: string;
     action?: "start" | "complete" | "security-event";
     code?: string;
     sessionId?: string;
@@ -108,6 +112,9 @@ export async function POST(request: Request) {
   try {
     const { session, hasResumeColumn } = await getSessionByCode(code);
     if (!session) return jsonError("Código no encontrado.", 404);
+    if (session.access_token && session.access_token !== body.accessToken) return jsonError("Abre el enlace completo enviado por tu reclutador.",403);
+    const activeService = await supabaseRest<boolean>("rpc/micro_service_active",{method:"POST",body:JSON.stringify({p_org:session.organization_id,p_module:"microtalento",p_workspace:session.workspace_id})});
+    if (!activeService) return jsonError("La institución necesita reactivar este servicio para continuar.",403);
     const cookieName = resumeCookieName(code);
     const cookieToken = readCookie(request, cookieName);
     if (session.estado === "bloqueado") return jsonError("Esta sesión está bloqueada.", 423);
@@ -168,11 +175,13 @@ export async function POST(request: Request) {
         interpretations: interpretationEntries(results),
         timedOut,
       });
-      const pdfPath = `evaluaciones-pdf/${encodeURIComponent(session.id)}.pdf`;
+      let pdfPath = "";
       let pdfHash = "";
       try {
         const digest = await crypto.subtle.digest("SHA-256", reportPdf);
         pdfHash = Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
+        // Un envío concurrente nunca sobrescribe el archivo ganador de la sesión.
+        pdfPath = `evaluaciones-pdf/${session.id}/${pdfHash}.pdf`;
         await supabaseStorageUpload(pdfPath, reportPdf);
       } catch {
         return jsonError("No se pudo guardar el PDF. La aplicación sigue disponible para reintentar.", 503);

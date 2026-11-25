@@ -1,20 +1,15 @@
 import { assignmentTestId, batteryTestCatalog, defaultBattery, type BatteryAssignment } from "@/lib/psychometric-battery";
-import { supabaseConfigurationError, supabaseIsConfigured, supabaseRest, supabaseUser } from "@/lib/supabase-rest";
+import { workspaceAccess } from "@/lib/ecosystem-server";
+import { accessFailure, identityRest, identityRpc } from "@/lib/micro-id-server";
 
 function jsonError(message: string, status = 400) {
   return Response.json({ error: message }, { status });
 }
 
-async function authenticatedUser(request: Request) {
-  const authorization = request.headers.get("authorization");
-  if (!authorization?.startsWith("Bearer ")) return null;
-  return supabaseUser(authorization.slice(7));
-}
-
-async function ensureRecruiter(user: { id: string; email?: string }) {
+async function ensureRecruiter(token: string, user: { id: string; email?: string }) {
   const email = user.email ?? `${user.id}@reclutador.local`;
   const nombre = user.email?.split("@")[0] || "Reclutador";
-  await supabaseRest("reclutadores", {
+  await identityRest(token,"reclutadores", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({ id: user.id, nombre, email }),
@@ -27,51 +22,30 @@ function asAssignments(value: unknown) {
     : [];
 }
 
-async function allocateBatteryCode() {
-  const [sessions, batteries] = await Promise.all([
-    supabaseRest<Array<{ codigo: string }>>("sesiones_evaluacion?select=codigo&order=created_at.desc&limit=5000"),
-    supabaseRest<Array<{ pruebas: unknown }>>("baterias?select=pruebas&limit=5000"),
-  ]);
-  let highest = 0;
-  for (const session of sessions) {
-    const match = /^IB-(\d+)$/i.exec(session.codigo);
-    const current = match ? Number(match[1]) : 0;
-    if (Number.isSafeInteger(current)) highest = Math.max(highest, current);
-  }
-  for (const battery of batteries) {
-    for (const assignment of asAssignments(battery.pruebas)) {
-      const legacyId = assignment.asignacion_id ?? assignment.assignmentId ?? "";
-      const match = /^IB-(\d+)$/i.exec(legacyId);
-      const current = match ? Number(match[1]) : 0;
-      if (Number.isSafeInteger(current)) highest = Math.max(highest, current);
-    }
-  }
-  return `IB-${String(highest + 1).padStart(4, "0")}`;
-}
-
 export async function GET(request: Request) {
-  if (!supabaseIsConfigured()) return jsonError(supabaseConfigurationError() ?? "La conexión segura de Supabase aún no está configurada.", 503);
-  const user = await authenticatedUser(request);
-  if (!user) return jsonError("Sesión de reclutador no válida.", 401);
+
   try {
-    await ensureRecruiter(user);
-    const batteries = await supabaseRest<Array<Record<string, unknown>>>(`baterias?reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,nombre,clasificacion_puesto,pruebas,tiempo_total_min,activa,created_at&order=created_at.desc`);
-    const sessions = await supabaseRest<Array<Record<string, unknown>>>(`sesiones_evaluacion?reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,codigo,bateria_id,candidato_nombre,candidato_edad,candidato_empresa,estado,resultados,pdf_path,created_at,finalizado_en,baterias(nombre,clasificacion_puesto,pruebas)&order=created_at.desc`);
+    const {token,user,workspace} = await workspaceAccess(request);
+    await ensureRecruiter(token,user);
+    const batteries = await identityRest<Array<Record<string, unknown>>>(token,`baterias?workspace_id=eq.${workspace.id}&reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,nombre,clasificacion_puesto,pruebas,tiempo_total_min,activa,created_at&order=created_at.desc`);
+    const sessions = await identityRest<Array<Record<string, unknown>>>(token,`sesiones_evaluacion?workspace_id=eq.${workspace.id}&reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,codigo,access_token,bateria_id,candidato_nombre,candidato_edad,candidato_empresa,estado,resultados,pdf_path,created_at,finalizado_en,baterias(nombre,clasificacion_puesto,pruebas)&order=created_at.desc`);
     return Response.json({ batteries, sessions });
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "No se pudo cargar el dashboard.", 500);
+    return accessFailure(error);
   }
 }
 
 export async function POST(request: Request) {
-  if (!supabaseIsConfigured()) return jsonError(supabaseConfigurationError() ?? "La conexión segura de Supabase aún no está configurada.", 503);
-  const user = await authenticatedUser(request);
-  if (!user) return jsonError("Sesión de reclutador no válida.", 401);
-  const body = await request.json() as { action?: "create-battery" | "create-session"; name?: string; classification?: string; totalMinutes?: number; tests?: BatteryAssignment[]; batteryId?: string };
+
   try {
-    await ensureRecruiter(user);
+  const {token,user,workspace} = await workspaceAccess(request);
+  const body = await request.json() as { action?: "create-battery" | "create-session"; name?: string; classification?: string; totalMinutes?: number; tests?: BatteryAssignment[]; batteryId?: string };
+    if (!body || typeof body !== "object") return jsonError("Solicitud inválida.");
+    if (body.name !== undefined && (typeof body.name !== "string" || body.name.length > 200)) return jsonError("Nombre de batería inválido.");
+    await ensureRecruiter(token,user);
     if (body.action === "create-battery") {
       const requestedTests = Array.isArray(body.tests) ? body.tests : [];
+      if (requestedTests.some((test) => !test || typeof test !== "object")) return jsonError("Formato de pruebas inválido.");
       if (requestedTests.length === 0) return jsonError("Selecciona al menos una prueba para crear la batería.");
       const requestedIds = requestedTests.map((test) => test.testId ?? test.prueba_id ?? "");
       const allowedIds = new Set(batteryTestCatalog.map((test) => test.id));
@@ -91,11 +65,11 @@ export async function POST(request: Request) {
         const order = index + 1;
         return { prueba_id: testId, orden: order, tiempo_limite_seg: seconds };
       });
-      const battery = await supabaseRest<Array<Record<string, unknown>>>("baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: assignments, tiempo_total_min: totalMinutes }) });
+      const battery = await identityRest<Array<Record<string, unknown>>>(token,"baterias", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ reclutador_id: user.id, organization_id: workspace.organization_id, workspace_id: workspace.id, nombre: body.name?.trim() || defaultBattery.name, clasificacion_puesto: body.classification || "custom", pruebas: assignments, tiempo_total_min: totalMinutes }) });
       return Response.json({ battery: battery[0] });
     }
     if (body.action === "create-session" && body.batteryId) {
-      const ownedBatteries = await supabaseRest<Array<{ id: string; nombre: string; pruebas: BatteryAssignment[] }>>(`baterias?id=eq.${encodeURIComponent(body.batteryId)}&reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,nombre,pruebas&limit=1`);
+      const ownedBatteries = await identityRest<Array<{ id: string; nombre: string; pruebas: BatteryAssignment[] }>>(token,`baterias?workspace_id=eq.${workspace.id}&id=eq.${encodeURIComponent(body.batteryId)}&reclutador_id=eq.${encodeURIComponent(user.id)}&select=id,nombre,pruebas&limit=1`);
       const ownedBattery = ownedBatteries[0];
       if (!ownedBattery) return jsonError("La batería no existe o no pertenece a este reclutador.", 404);
       const storedAssignments = asAssignments(ownedBattery.pruebas);
@@ -107,27 +81,20 @@ export async function POST(request: Request) {
         };
       });
       if (!assignments.length) return jsonError("La batería no tiene pruebas asignadas.");
-      let nextCode = await allocateBatteryCode();
-      if (JSON.stringify(assignments) !== JSON.stringify(storedAssignments)) {
-        await supabaseRest(`baterias?id=eq.${encodeURIComponent(body.batteryId)}&reclutador_id=eq.${encodeURIComponent(user.id)}`, {
-          method: "PATCH",
-          headers: { Prefer: "return=minimal" },
-          body: JSON.stringify({ pruebas: assignments }),
-        });
-      }
+      let nextCode = await identityRpc<string>(token,"micro_next_evaluation_code",{p_workspace:workspace.id});
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const code = nextCode;
         try {
-          const session = await supabaseRest<Array<Record<string, unknown>>>("sesiones_evaluacion", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ codigo: code, bateria_id: body.batteryId, reclutador_id: user.id, estado: "creado" }) });
-          return Response.json({ session: { ...session[0], baterias: { nombre: ownedBattery.nombre, pruebas: assignments } }, sharePath: `/evaluacion/${encodeURIComponent(code)}` });
+          const session = await identityRest<Array<Record<string, unknown>>>(token,"sesiones_evaluacion", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({ codigo: code, bateria_id: body.batteryId, reclutador_id: user.id, organization_id: workspace.organization_id, workspace_id: workspace.id, estado: "creado" }) });
+          return Response.json({ session: { ...session[0], baterias: { nombre: ownedBattery.nombre, pruebas: assignments } }, sharePath: `/evaluacion/${encodeURIComponent(code)}?t=${session[0].access_token}` });
         } catch (error) {
           if (attempt === 2) throw error;
-          nextCode = await allocateBatteryCode();
+          nextCode = await identityRpc<string>(token,"micro_next_evaluation_code",{p_workspace:workspace.id});
         }
       }
     }
     return jsonError("Acción no reconocida.");
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "No se pudo guardar la operación.", 500);
+    return accessFailure(error);
   }
 }

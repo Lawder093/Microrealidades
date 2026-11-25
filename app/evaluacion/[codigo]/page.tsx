@@ -5,6 +5,8 @@ import { SiteHeader } from "@/components/site-header";
 
 export const metadata = {
   title: "Evaluación — Microtalento",
+  robots: { index: false, follow: false },
+  referrer: "no-referrer" as const,
   description: "Aplicación privada de una batería psicométrica de Microrealidades.",
 };
 
