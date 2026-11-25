@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { EcosystemProvider } from "@/components/ecosystem-provider";
 import { MicrohubAuthProvider } from "@/components/microhub-auth-provider";
 export const metadata: Metadata = {
   title: "Microrealidades — Psicología, Tecnología y Comunalidad",
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
   icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="es"><body><MicrohubAuthProvider>{children}</MicrohubAuthProvider></body></html>;
+  return <html lang="es"><body><MicrohubAuthProvider><EcosystemProvider>{children}</EcosystemProvider></MicrohubAuthProvider></body></html>;
 }

@@ -5,8 +5,10 @@ create table if not exists public.micro_profiles (
   display_name text not null default '' check(length(display_name)<=120),
   bio text not null default '' check(length(bio)<=1500),
   is_active boolean not null default true,
+  sessions_valid_after timestamptz,
   created_at timestamptz not null default now()
 );
+alter table public.micro_profiles add column if not exists sessions_valid_after timestamptz;
 create table if not exists public.micro_sessions (
   id uuid primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -28,7 +30,8 @@ select id,left(coalesce(raw_user_meta_data->>'display_name',''),120) from auth.u
 
 create or replace function public.micro_identity_active() returns boolean
 language sql stable security definer set search_path='' as $$
-  select exists(select 1 from public.micro_profiles where user_id=auth.uid() and is_active)
+  select exists(select 1 from public.micro_profiles where user_id=auth.uid() and is_active
+    and (sessions_valid_after is null or to_timestamp(coalesce((auth.jwt()->>'iat')::double precision,0))>sessions_valid_after))
     and not exists(select 1 from public.micro_sessions where id=nullif(auth.jwt()->>'session_id','')::uuid and user_id=auth.uid() and revoked_at is not null);
 $$;
 create or replace function public.micro_profile_update(p_name text,p_bio text) returns void
@@ -45,7 +48,10 @@ begin
   if not public.micro_identity_active() then raise exception 'Sesión revocada o cuenta suspendida' using errcode='42501'; end if;
   if sid is not null then
     insert into public.micro_sessions(id,user_id,device_label) values(sid,auth.uid(),left(p_device,160))
-    on conflict(id) do update set last_seen_at=now();
+    on conflict(id) do update set last_seen_at=now(),
+      device_label=case when excluded.device_label='Navegador' then micro_sessions.device_label else excluded.device_label end
+      where micro_sessions.user_id=auth.uid();
+    if not found then raise exception 'La sesión pertenece a otra identidad' using errcode='42501'; end if;
   end if;
   return jsonb_build_object('profile',(select to_jsonb(p) from public.micro_profiles p where user_id=auth.uid()),
     'sessions',coalesce((select jsonb_agg(to_jsonb(s)||jsonb_build_object('is_current',s.id=sid)) from public.micro_sessions s where user_id=auth.uid()),'[]'::jsonb));
@@ -63,9 +69,22 @@ language plpgsql security definer set search_path='' as $$
 begin
   if not public.micro_identity_active() then raise exception 'Sesión no disponible' using errcode='42501'; end if;
   update public.micro_sessions set revoked_at=now() where user_id=auth.uid();
+  update public.micro_profiles set sessions_valid_after=now() where user_id=auth.uid();
 end; $$;
 revoke all on function public.micro_sessions_revoke_all() from public;
 grant execute on function public.micro_sessions_revoke_all() to authenticated;
+
+create or replace function public.micro_session_revoke_current() returns void
+language plpgsql security definer set search_path='' as $$
+declare sid uuid := nullif(auth.jwt()->>'session_id','')::uuid;
+begin
+  if not public.micro_identity_active() then raise exception 'Sesión no disponible' using errcode='42501'; end if;
+  if sid is null then raise exception 'Identificador de sesión requerido'; end if;
+  insert into public.micro_sessions(id,user_id,revoked_at) values(sid,auth.uid(),now())
+  on conflict(id) do update set revoked_at=now() where micro_sessions.user_id=auth.uid();
+end; $$;
+revoke all on function public.micro_session_revoke_current() from public;
+grant execute on function public.micro_session_revoke_current() to authenticated;
 
 alter table public.micro_profiles enable row level security;
 alter table public.micro_sessions enable row level security;

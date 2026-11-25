@@ -6,7 +6,7 @@ import { MicrohubAuthError, microhubAuthConfigured, microhubAuthRequest, microhu
 type MicrohubAuth = {
   session: MicrohubSession | null; loading: boolean; configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (name: string, email: string, password: string) => Promise<boolean>;
+  signUp: (name: string, email: string, password: string, next?: string) => Promise<boolean>;
   signOut: (all?: boolean) => Promise<void>;
   recoverPassword: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -95,8 +95,8 @@ export function MicrohubAuthProvider({ children }: { children: ReactNode }) {
     generation.current += 1; store(next);
   }, [store]);
 
-  const signUp = useCallback(async (name: string, email: string, password: string) => {
-    const data = await microhubAuthRequest(`signup?redirect_to=${encodeURIComponent(`${window.location.origin}/auth/confirm`)}`, { email: email.trim(), password, data: { display_name: name.trim() } });
+  const signUp = useCallback(async (name: string, email: string, password: string, returnTo = "/microhub") => {
+    const data = await microhubAuthRequest(`signup?redirect_to=${encodeURIComponent(`${window.location.origin}/auth/confirm?next=${encodeURIComponent(returnTo)}`)}`, { email: email.trim(), password, data: { display_name: name.trim() } });
     const next = readMicrohubSession(data);
     if (next) { generation.current += 1; store(next); }
     return Boolean(next);
@@ -104,6 +104,7 @@ export function MicrohubAuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async (all = false) => {
     const token = currentSession.current?.access_token;
+    if (token) await fetch("/api/micro-id", { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({action: all ? "revoke-all" : "revoke-current"}) }).catch(() => undefined);
     generation.current += 1; store(null);
     if (token) await microhubAuthRequest(`logout?scope=${all ? "global" : "local"}`, {}, token).catch(() => undefined);
   }, [store]);

@@ -1198,3 +1198,20 @@ footer{min-height:670px;padding:90px 5vw 45px;position:relative;display:flex;fle
  .blog-reading-paper h1{font-size:clamp(35px,10vw,70px);line-height:1}
  .blog-reading-paper .back-link{margin-bottom:35px;min-height:44px;align-content:center}
 }
+
+/* Ecosystem Core: mismos tokens y controles de Microrealidades. */
+.ecosystem-workspace{display:grid;gap:10px;max-width:720px;margin:30px 0;font:12px/1.6 monospace}
+.editorial-filters{display:flex;align-items:end;gap:24px;flex-wrap:wrap;margin-bottom:32px}
+.editorial-filters label{display:grid;gap:10px;font:12px/1.5 monospace;flex:1 1 230px}
+.editorial-filters input,.editorial-filters select{background:var(--paper);color:var(--ink);padding:12px;font-size:16px;min-height:48px;border:1px solid #ffffff35;max-width:100%;width:100%}
+.ecosystem-workspace select{width:100%;padding:13px 4px;color:var(--ink);background:var(--paper);border:1px solid #10111450;font-size:16px;min-height:48px}
+.ecosystem-module-context{padding:20px 5vw;background:var(--paper);color:var(--ink)}
+.ecosystem-module-disabled:hover{transform:none;background:transparent;color:inherit}
+.ecosystem-tabs{margin:45px 0 30px;border-bottom:1px solid #10111440}
+.ecosystem-tabs button[aria-pressed=true]{color:var(--pink);border-color:var(--pink)}
+.ecosystem-admin-form{margin:50px 0;padding-bottom:40px;border-bottom:1px solid #10111440}
+.ecosystem-module-options{border:1px solid #10111440!important;padding:18px!important}
+.ecosystem-module-options label{display:flex;align-items:center;gap:14px;min-height:44px;line-height:1.5}
+.ecosystem-module-options input{width:20px;height:20px;flex:0 0 20px;accent-color:var(--pink)}
+.hub-section>h1,.hub-section-heading h1{font-size:clamp(40px,6vw,85px);line-height:.95;letter-spacing:-.05em;overflow-wrap:anywhere}
+@media(max-width:980px){.ecosystem-module-context{padding:18px 6vw}.ecosystem-tabs{gap:12px 24px}.ecosystem-admin-form{margin-top:35px}}

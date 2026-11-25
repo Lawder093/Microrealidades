@@ -15,6 +15,7 @@ export async function PATCH(request: Request) {
     if (body.action === "profile") await identityRpc(token,"micro_profile_update", { p_name: body.name ?? "", p_bio: body.bio ?? "" });
     else if (body.action === "revoke-session") await identityRpc(token,"micro_session_revoke", { p_session: body.sessionId });
     else if (body.action === "revoke-all") await identityRpc(token,"micro_sessions_revoke_all");
+    else if (body.action === "revoke-current") await identityRpc(token,"micro_session_revoke_current");
     else return Response.json({ error: "Acción desconocida." }, { status: 400 });
     return Response.json({ ok: true });
   } catch (error) { return accessFailure(error); }

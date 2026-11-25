@@ -34,7 +34,7 @@ export async function database(until = "9999") {
 export async function asUser(db, user, action, session = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa") {
   return db.transaction(async (tx) => {
     await tx.exec("set local role authenticated");
-    await tx.query("select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)", [user,JSON.stringify({ sub: user, session_id: session })]);
+    await tx.query("select set_config('request.jwt.claim.sub',$1,true),set_config('request.jwt.claims',$2,true)", [user,JSON.stringify({ sub: user, session_id: session, iat: Math.floor(Date.now()/1000) })]);
     return action(tx);
   });
 }

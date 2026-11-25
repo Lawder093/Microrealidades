@@ -27,7 +27,7 @@ export function MicrohubAuthForm({ register = false }: { register?: boolean }) {
     setPending(true);
     try {
       if (register) {
-        const authenticated = await signUp(name, email, password);
+        const authenticated = await signUp(name, email, password, next);
         setPassword(""); setConfirmation("");
         if (!authenticated) { setSent(true); return; }
       } else { await signIn(email, password); setPassword(""); }

@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
+import { useEcosystem } from "@/components/ecosystem-provider";
 import { useMicrohubAuth } from "@/components/microhub-auth-provider";
 
 type IdentityData = { profile: { display_name: string; bio: string }; sessions: Array<{ id: string; device_label: string; last_seen_at: string; revoked_at: string | null; is_current: boolean }> };
 
 export function MicroIdAccount() {
+  const { reload } = useEcosystem();
   const { authFetch, signOut } = useMicrohubAuth();
   const [data, setData] = useState<IdentityData | null>(null);
   const [name, setName] = useState("");
@@ -31,6 +33,7 @@ export function MicroIdAccount() {
       const result = await response.json() as { error?: string };
       if (!response.ok) throw new Error(result.error);
       setMessage("Perfil actualizado.");
+      await reload();
     } catch (error) { setMessage(error instanceof Error ? error.message : "No se pudo guardar."); }
     finally { setPending(false); }
   }
@@ -44,7 +47,7 @@ export function MicroIdAccount() {
   }
 
   return <section className="hub-section"><div className="hub-section-heading"><p className="section-label">MicroID</p><h1>Tu identidad en <em>Microrealidades.</em></h1><Link className="section-link" href="/microhub">Ir a MicroHub ↗</Link></div>
-    <form className="root-blog-form" onSubmit={save}><div className="root-form-grid"><label>Nombre público<input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} /></label><label>Presentación<textarea maxLength={1500} value={bio} onChange={(event) => setBio(event.target.value)} /></label></div><button className="publication-primary-action" disabled={pending || !data}>Guardar perfil</button></form>
+    <form className="root-blog-form" onSubmit={save}><div className="root-form-grid"><label>Nombre público<input required maxLength={120} value={name} onChange={(event) => setName(event.target.value)} /></label><label>Presentación pública<textarea maxLength={1500} value={bio} onChange={(event) => setBio(event.target.value)} /></label></div><button className="publication-primary-action" disabled={pending || !data}>Guardar perfil</button></form>
     <p role="status">{message}</p><h2>Sesiones</h2>{data?.sessions.filter((entry) => !entry.revoked_at).map((entry) => <article className="root-post-row" key={entry.id}><div><p>{entry.is_current ? "Este navegador" : entry.device_label}</p><small>{new Date(entry.last_seen_at).toLocaleString("es-MX")}</small></div><button className="super-battery-small-action" onClick={() => void revoke(entry.id)}>Cerrar sesión</button></article>)}<button className="section-link" onClick={() => void revoke()}>Cerrar todas las sesiones</button>
   </section>;
 }
