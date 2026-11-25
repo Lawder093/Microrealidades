@@ -16,7 +16,6 @@ export default function Home() {
     <main>
       <SiteHeader />
       <section className="hero" id="inicio">
-        <div className="hero-kicker"><span>Laboratorio independiente</span><span>MX · LATAM</span></div>
         <h1>Mirar lo<br />cotidiano para<br /><em>transformarlo.</em></h1>
         <p className="hero-copy">Psicología, tecnología y comunalidad para observar, nombrar y transformar las realidades que habitamos.</p>
         <a className="hero-link" href="#proyectos">Explorar lo que hacemos <span aria-hidden="true">↘</span></a>

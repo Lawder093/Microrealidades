@@ -1,38 +1,32 @@
-import { PatientWorkspace } from "@/components/patient-workspace";
-import { MicrohubJournal } from "@/components/microhub-journal";
+import Link from "next/link";
+import { MicrohubAccount } from "@/components/microhub-access";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
 export const metadata = {
   title: "Microhub — Microrealidades",
-  description: "El espacio propio de Microrealidades para reunir herramientas, procesos y conversaciones.",
+  description: "Evaluaciones, tests y herramientas para psicólogos en un mismo espacio.",
 };
 
+const tools = [
+  { number: "01", href: "/microhub/evaluaciones", title: "Evaluaciones", text: "Microtalento: crea baterías, asigna tests con una sola liga y revisa resultados y reportes PDF.", status: "Microtalento · Acceso profesional" },
+  { number: "02", href: "/microhub/expediente", title: "Expediente", text: "Una vista para ordenar la historia y el acompañamiento de cada persona. Por ahora, únicamente datos simulados.", status: "Demostración · Datos simulados" },
+  { number: "03", href: "/microhub/bitacora", title: "Bitácora", text: "Un espacio de autoobservación para registrar experiencias. Se guarda localmente en este navegador.", status: "Herramienta local" },
+];
+
 export default function MicrohubPage() {
-  return (
-    <main className="inner-page microhub-page">
-      <SiteHeader compact />
-      <section className="page-intro" aria-labelledby="microhub-title">
-        <p className="section-label">[ 02 ] &nbsp; Espacio propio</p>
-        <h1 id="microhub-title">Bienvenidas al<br /><em>Microhub.</em></h1>
-        <p>Un punto de encuentro para explorar lo que estamos pensando, haciendo y compartiendo desde Microrealidades.</p>
-      </section>
-      <section className="hub-section" aria-labelledby="patient-section-title">
-        <div className="hub-section-heading">
-          <p className="section-label">Primera arquitectura</p>
-          <h2 id="patient-section-title">Un expediente que <em>acompaña.</em></h2>
-          <p>Una vista sencilla para ordenar la historia, el presente y los próximos pasos de cada persona. Esta primera versión usa únicamente datos simulados.</p>
-        </div>
-        <PatientWorkspace />
-        <div className="hub-journal-divider" aria-hidden="true" />
-        <div className="hub-section-heading hub-journal-heading">
-          <p className="section-label">Espacio personal</p>
-          <h2>Volver a lo que <em>viviste.</em></h2>
-          <p>Esta bitácora permanece separada del expediente: es una herramienta local de autoobservación y no un registro clínico.</p>
-        </div>
-        <MicrohubJournal />
-      </section>
-      <SiteFooter />
-    </main>
-  );
+  return <main className="inner-page microhub-page">
+    <SiteHeader compact />
+    <section className="page-intro" aria-labelledby="microhub-title">
+      <p className="section-label">[ 02 ] &nbsp; Herramientas para psicólogos</p>
+      <h1 id="microhub-title">Tu espacio en<br /><em>Microhub.</em></h1>
+      <p>Evaluaciones, tests y herramientas para acompañar tu práctica, en un mismo lugar.</p>
+    </section>
+    <section className="hub-section" aria-labelledby="microhub-tools-title">
+      <div className="hub-section-heading"><p className="section-label">Espacio profesional</p><h2 id="microhub-tools-title">Herramientas que <em>acompañan.</em></h2></div>
+      <MicrohubAccount />
+      <div className="hub-grid">{tools.map((tool) => <Link prefetch={false} className="hub-card" href={tool.href} key={tool.href}><span>{tool.number}</span><h2>{tool.title}</h2><p>{tool.text}</p><small>{tool.status} ↗</small></Link>)}</div>
+    </section>
+    <SiteFooter />
+  </main>;
 }

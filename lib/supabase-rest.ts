@@ -19,6 +19,10 @@ function getSupabaseConfig() {
   return { url: supabaseUrl, key: supabaseKey };
 }
 
+export class SupabaseRestError extends Error {
+  constructor(public readonly status: number, public readonly code?: string) { super(`Supabase respondió ${status}.`); }
+}
+
 export async function supabaseRest<T>(path: string, init: RequestInit = {}) {
   const { url, key } = getSupabaseConfig();
   const response = await fetch(`${url}/rest/v1/${path}`, {
@@ -31,7 +35,10 @@ export async function supabaseRest<T>(path: string, init: RequestInit = {}) {
     },
     cache: "no-store",
   });
-  if (!response.ok) throw new Error(`Supabase respondió ${response.status}.`);
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({})) as { code?: string };
+    throw new SupabaseRestError(response.status, detail.code);
+  }
   const text = await response.text();
   return (text ? JSON.parse(text) : null) as T;
 }
@@ -43,9 +50,9 @@ export async function supabaseUser(accessToken: string) {
   return response.json() as Promise<{ id: string; email?: string }>;
 }
 
-export async function supabaseStorageUpload(path: string, body: BodyInit) {
+export async function supabaseStorageUpload(path: string, body: BodyInit, contentType = "application/pdf", upsert = true) {
   const { url, key } = getSupabaseConfig();
-  const response = await fetch(`${url}/storage/v1/object/${path}`, { method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/pdf", "x-upsert": "true" }, body, cache: "no-store" });
+  const response = await fetch(`${url}/storage/v1/object/${path}`, { method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": contentType, "x-upsert": String(upsert) }, body, cache: "no-store" });
   if (!response.ok) throw new Error(`Storage respondió ${response.status}.`);
 }
 
@@ -60,3 +67,9 @@ export async function supabaseStorageDownload(path: string) {
 }
 
 export { supabaseUrl };
+
+export async function supabaseStorageRemove(bucket: string, path: string): Promise<void> {
+  const { url, key } = getSupabaseConfig();
+  const response = await fetch(`${url}/storage/v1/object/${bucket}`, { method: "DELETE", headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ prefixes: [path] }), cache: "no-store" });
+  if (!response.ok) throw new Error(`Storage respondió ${response.status}.`);
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMicrohubAuth } from "@/components/microhub-auth-provider";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -9,12 +10,12 @@ const navigation = [
   { label: "Proyectos", href: "/proyectos" },
   { label: "Microhub", href: "/microhub" },
   { label: "Publicaciones", href: "/publicaciones" },
-  { label: "Evaluaciones", href: "/evaluaciones" },
-  { label: "Ingresar", href: "/ingresar" },
 ];
 
 export function SiteHeader({ compact = false }: { compact?: boolean }) {
   const pathname = usePathname();
+  const { session, loading } = useMicrohubAuth();
+  const links = [...navigation, ...(session ? [] : [{ label: "Iniciar sesión", href: "/ingresar" }, { label: "Crear cuenta", href: "/registro" }])];
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
 
@@ -32,7 +33,7 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
 
   return (
     <header className={`site-header${compact ? " page-header" : ""}${menuOpen ? " is-menu-open" : ""}`}>
-      <Link className="brand" href="/" aria-label="Microrealidades, inicio" onClick={() => setMenuOpen(false)}>
+      <Link prefetch={false} className="brand" href="/" aria-label="Microrealidades, inicio" onClick={() => setMenuOpen(false)}>
         <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
         <span>MICRO<br />REALIDADES</span>
       </Link>
@@ -42,10 +43,11 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
           {menuOpen ? <path d="m4 4 10 10M14 4 4 14" /> : <path d="M2 5h14M2 9h14M2 13h14" />}
         </svg>
       </button>
-      <nav id="site-navigation" aria-label="Navegación principal">
-        {navigation.map((item) => {
-          const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(`${item.href}/`)) || (item.href === "/evaluaciones" && pathname?.startsWith("/evaluacion/"));
-          return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>{item.label}</Link>;
+      <nav id="site-navigation" aria-label="Navegación principal" aria-busy={loading}>
+        {/* El acceso cambia con la sesión: evitar precargas que sobrevivan al cambio de cuenta. */}
+        {links.map((item) => {
+          const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(`${item.href}/`)) || (item.href === "/microhub" && (pathname === "/evaluaciones" || pathname?.startsWith("/evaluacion/")));
+          return <Link prefetch={false} key={item.href} href={item.href} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>{item.label}</Link>;
         })}
       </nav>
     </header>

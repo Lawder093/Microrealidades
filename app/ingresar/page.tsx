@@ -1,22 +1,10 @@
+import { Suspense } from "react";
+import { MicrohubAuthForm } from "@/components/microhub-auth-form";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 
-export const metadata = {
-  title: "Ingresar — Microrealidades",
-  description: "Acceso al espacio de trabajo de Microrealidades.",
-};
+export const metadata = { title: "Iniciar sesión — Microhub", description: "Accede a tus evaluaciones y herramientas profesionales." };
 
-export default function SignInPage() {
-  return (
-    <main className="inner-page sign-in-page">
-      <SiteHeader compact />
-      <section className="access-panel" aria-labelledby="access-title">
-        <p className="section-label">[ 04 ] &nbsp; Acceso</p>
-        <h1 id="access-title">Entrar a<br /><em>Microrealidades.</em></h1>
-        <p>Este espacio estará disponible muy pronto para quienes participan en nuestros procesos.</p>
-        <span className="status">Próximamente</span>
-      </section>
-      <SiteFooter />
-    </main>
-  );
+export default function AuthPage() {
+  return <main className="inner-page sign-in-page"><SiteHeader compact /><section className="access-panel microhub-auth-panel" aria-labelledby="access-title"><p className="section-label">Microhub · Acceso profesional</p><div><h1 id="access-title">Entra a tu<br /><em>Microhub.</em></h1><p>Inicia sesión para crear evaluaciones y continuar con tus herramientas.</p></div><Suspense fallback={<p aria-busy="true">Preparando tu acceso…</p>}><MicrohubAuthForm /></Suspense></section><SiteFooter /></main>;
 }

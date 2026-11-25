@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
+import { useMicrohubAuth } from "@/components/microhub-auth-provider";
 
 type JournalEntry = {
   id: string;
@@ -28,6 +29,9 @@ function newId() {
 }
 
 export function MicrohubJournal() {
+  const { session } = useMicrohubAuth();
+  // Mantener las notas locales separadas por cuenta; no atribuir notas anónimas a otra persona.
+  const storageKey = `${STORAGE_KEY}:${session?.user.id ?? "anonymous"}`;
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [date, setDate] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -40,7 +44,7 @@ export function MicrohubJournal() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       try {
-        const saved = window.localStorage.getItem(STORAGE_KEY);
+        const saved = window.localStorage.getItem(storageKey);
         if (saved) setEntries(JSON.parse(saved) as JournalEntry[]);
       } catch {
         setMessage("No pudimos leer este dispositivo. Puedes continuar, pero esta sesión no se guardará.");
@@ -50,12 +54,12 @@ export function MicrohubJournal() {
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [storageKey]);
 
   function persist(nextEntries: JournalEntry[]) {
     setEntries(nextEntries);
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextEntries));
+      window.localStorage.setItem(storageKey, JSON.stringify(nextEntries));
     } catch {
       setMessage("No pudimos guardar en este dispositivo. Revisa el espacio disponible o la configuración de privacidad del navegador.");
     }
@@ -121,7 +125,7 @@ export function MicrohubJournal() {
         <section className="journal-entries" aria-labelledby="entries-title">
           <div className="journal-entries-heading"><div><p className="section-label">Tu archivo</p><h2 id="entries-title">Entradas <span>{entries.length}</span></h2></div>{entries.length > 0 && <button className="journal-clear" type="button" onClick={clearEntries}>Borrar todas</button>}</div>
           {entries.length === 0 ? (
-            <div className="journal-empty"><span aria-hidden="true">✳</span><p>Aquí aparecerán tus notas. Este archivo vive en tu dispositivo y solo tú puedes verlo desde este navegador.</p></div>
+            <div className="journal-empty"><span aria-hidden="true">✳</span><p>Aquí aparecerán tus notas. Este archivo se guarda localmente para tu cuenta en este navegador.</p></div>
           ) : (
             <div className="journal-entry-list">
               {entries.map((entry) => (
