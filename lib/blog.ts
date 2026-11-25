@@ -4,6 +4,7 @@ export type BlogPost = {
   id: string; slug: string; title: string; excerpt: string; body: string; category: string;
   author_name: string; tags: string[]; source_url: string | null; cover_image_path: string | null;
   color: BlogColor; is_published: boolean; published_at: string | null; is_archived: boolean;
+  author_user_id: string | null; review_status: "draft" | "review" | "published" | "withdrawn"; featured: boolean;
   created_at: string; updated_at: string;
 };
 export type BlogSummary = Omit<BlogPost, "body" | "cover_image_path" | "is_archived" | "updated_at"> & { has_cover: boolean };

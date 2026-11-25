@@ -24,7 +24,7 @@ function SavedCover({ post }: { post: BlogPost }) {
   return image ? <img className="root-cover-preview" src={image} alt="Portada guardada" /> : null;
 }
 
-export function BlogPostForm({ post, onSaved, onCancel }: { post: BlogPost | null; onSaved: (post: BlogPost) => void; onCancel: () => void }) {
+export function BlogPostForm({ post, onSaved, onCancel, canPublish = false }: { canPublish?: boolean; post: BlogPost | null; onSaved: (post: BlogPost) => void; onCancel: () => void }) {
   const { authFetch } = useMicrohubAuth();
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
@@ -61,7 +61,7 @@ export function BlogPostForm({ post, onSaved, onCancel }: { post: BlogPost | nul
     <fieldset disabled={pending}>
       <div className="root-form-grid">
         <label className="root-field-wide">Título<input name="title" required maxLength={180} defaultValue={post?.title ?? ""} /></label>
-        <label>Categoría<input name="category" required maxLength={80} defaultValue={post?.category ?? "Notas de campo"} /></label>
+        <label>Categoría<select name="category" defaultValue={post?.category ?? "Psicología"}>{[...new Set(["Psicología","Tecnología","Comunalidad",...(post ? [post.category] : [])])].map((category)=><option key={category}>{category}</option>)}</select></label>
         <label>Ruta de la publicación <span>(opcional)</span><input name="slug" maxLength={180} defaultValue={post?.slug ?? ""} placeholder="Se genera a partir del título" autoCapitalize="none" spellCheck={false} /></label>
         <label className="root-field-wide">Resumen<textarea name="excerpt" required maxLength={320} rows={3} defaultValue={post?.excerpt ?? ""} /></label>
         <label className="root-field-wide">Contenido<textarea name="body" required maxLength={50000} rows={15} defaultValue={post?.body ?? ""} /><span>Separa los párrafos con una línea en blanco. Puedes escribir o pegar tu texto editorial.</span></label>
@@ -83,7 +83,7 @@ export function BlogPostForm({ post, onSaved, onCancel }: { post: BlogPost | nul
       <div className="root-actions">
         <button className="publication-secondary-action" type="button" onClick={previewArticle}>Vista previa</button>
         <button className="publication-secondary-action" type="submit" name="intent" value="draft">{pending ? "Guardando…" : "Guardar borrador"}</button>
-        <button className="publication-primary-action" type="submit" name="intent" value="publish">{post?.is_published ? "Actualizar publicación ↗" : "Publicar en el blog ↗"}</button>
+        {canPublish && <button className="publication-primary-action" type="submit" name="intent" value="publish">{post?.is_published ? "Actualizar publicación ↗" : "Publicar en el blog ↗"}</button>}
         {post && <button className="publication-quiet-action" type="button" onClick={onCancel}>Cancelar edición</button>}
       </div>
     </fieldset>
