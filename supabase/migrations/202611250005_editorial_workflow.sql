@@ -1,4 +1,9 @@
 begin;
+do $$ begin
+  if exists(select 1 from public.blog_posts where slug in ('gestor','autores')) then
+    raise exception 'Hay artículos con rutas reservadas (gestor/autores). Revisar sus rutas y enlaces antes de instalar el gestor editorial';
+  end if;
+end; $$;
 alter table public.blog_posts add column if not exists author_user_id uuid references auth.users(id);
 alter table public.blog_posts add column if not exists review_status text not null default 'draft' check(review_status in ('draft','review','published','withdrawn'));
 alter table public.blog_posts add column if not exists featured boolean not null default false;

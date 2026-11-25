@@ -21,6 +21,7 @@ test("editorial data keeps valid routes and rejects invalid fields without trunc
   assert.equal(post.slug, "psicologia-y-comunidad");
   assert.deepEqual(post.tags, ["comunidad", "psicología"]);
   assert.equal(blogSlug("  Un TÍTULO: en comunidad  "), "un-titulo-en-comunidad");
+  for (const slug of ["gestor", "autores"]) assert.throws(() => validateBlogInput({ ...input, slug }));
   for (const override of [{ body: "" }, { title: "a".repeat(181) }, { excerpt: "a".repeat(321) }, { tags: Array.from({ length: 13 }, (_, i) => `tag-${i}`).join(",") }, { color: "purple" }]) assert.throws(() => validateBlogInput({ ...input, ...override }));
 });
 

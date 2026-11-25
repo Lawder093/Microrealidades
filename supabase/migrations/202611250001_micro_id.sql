@@ -30,8 +30,10 @@ select id,left(coalesce(raw_user_meta_data->>'display_name',''),120) from auth.u
 
 create or replace function public.micro_identity_active() returns boolean
 language sql stable security definer set search_path='' as $$
-  select exists(select 1 from public.micro_profiles where user_id=auth.uid() and is_active
-    and (sessions_valid_after is null or to_timestamp(coalesce((auth.jwt()->>'iat')::double precision,0))>sessions_valid_after))
+  -- Auth conserva la fecha precisa de creación de la sesión: evita depender de iat (segundos).
+  select exists(select 1 from public.micro_profiles p join auth.sessions s on s.user_id=p.user_id
+    where p.user_id=auth.uid() and p.is_active and s.id=nullif(auth.jwt()->>'session_id','')::uuid
+      and (p.sessions_valid_after is null or s.created_at>p.sessions_valid_after))
     and not exists(select 1 from public.micro_sessions where id=nullif(auth.jwt()->>'session_id','')::uuid and user_id=auth.uid() and revoked_at is not null);
 $$;
 create or replace function public.micro_profile_update(p_name text,p_bio text) returns void

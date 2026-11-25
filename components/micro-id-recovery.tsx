@@ -13,13 +13,20 @@ export function MicroIdRecovery() {
   const [pending, setPending] = useState(false);
   const request = useRef<Promise<void> | null>(null);
   useEffect(() => {
-    if (loading || request.current) return;
-    const params = new URLSearchParams(window.location.search);
-    for (const [key,value] of new URLSearchParams(window.location.hash.slice(1))) params.set(key,value);
-    if (!params.get("token_hash") && !params.get("refresh_token") && !params.get("error")) return;
-    window.history.replaceState(null,"",window.location.pathname);
-    request.current = confirm(params);
-    void request.current.catch((error: unknown) => setMessage(error instanceof Error ? error.message : "El enlace expiró."));
+    if (loading) return;
+    const consume = () => {
+      if (request.current) return;
+      const params = new URLSearchParams(window.location.search);
+      for (const [key,value] of new URLSearchParams(window.location.hash.slice(1))) params.set(key,value);
+      if (!params.get("token_hash") && !params.get("refresh_token") && !params.get("error")) return;
+      window.history.replaceState(null,"",window.location.pathname);
+      const pending = confirm(params);
+      request.current = pending;
+      void pending.catch((error: unknown) => setMessage(error instanceof Error ? error.message : "El enlace expiró.")).finally(() => { request.current = null; });
+    };
+    consume();
+    window.addEventListener("hashchange",consume);
+    return () => window.removeEventListener("hashchange",consume);
   }, [confirm, loading]);
   async function submit(event: FormEvent) {
     event.preventDefault(); setPending(true); setMessage("");

@@ -30,6 +30,7 @@ export function validateBlogInput(value: Record<string, unknown>): BlogInput {
   const title = field(value.title, "Título", 180);
   const slug = blogSlug(field(value.slug, "Ruta", 180, false) || title);
   if (!slug) throw new BlogValidationError("Escribe una ruta con letras o números.");
+  if (["gestor", "autores"].includes(slug)) throw new BlogValidationError("Esa ruta está reservada para el espacio editorial. Elige otra.");
   const source = field(value.source_url, "Enlace original", 600, false);
   if (source) {
     try { const url = new URL(source); if (!/^https?:$/.test(url.protocol) || url.username || url.password) throw new Error(); }
