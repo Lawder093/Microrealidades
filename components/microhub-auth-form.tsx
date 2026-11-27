@@ -6,11 +6,12 @@ import { useState, type FormEvent } from "react";
 import { useMicrohubAuth } from "@/components/microhub-auth-provider";
 import { microhubReturnPath } from "@/lib/microhub-auth";
 
-export function MicrohubAuthForm({ register = false }: { register?: boolean }) {
+export function MicrohubAuthForm() {
   const { session, loading, configured, signIn, signUp } = useMicrohubAuth();
   const router = useRouter();
   const params = useSearchParams();
   const next = microhubReturnPath(params.get("next"));
+  const register = params.get("modo") === "registro";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,6 +19,12 @@ export function MicrohubAuthForm({ register = false }: { register?: boolean }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+
+  function changeMode(createAccount: boolean) {
+    setError(""); setSent(false); setPassword(""); setConfirmation("");
+    const query = new URLSearchParams({ next, ...(createAccount ? { modo: "registro" } : {}) });
+    router.replace(`/ingresar?${query}`, { scroll: false });
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,8 +44,8 @@ export function MicrohubAuthForm({ register = false }: { register?: boolean }) {
   }
 
   if (loading) return <div className="microhub-auth-form" aria-busy="true"><p>Preparando tu acceso…</p></div>;
-  if (session) return <div className="microhub-auth-form"><p>Ya iniciaste sesión como {session.user.email}.</p><Link prefetch={false} className="super-battery-action" href={next}>Continuar a Microhub ↗</Link></div>;
-  if (sent) return <div className="microhub-auth-form" role="status"><h2>Revisa tu <em>correo.</em></h2><p>Si el registro puede completarse, recibirás un enlace en <strong>{email}</strong>. Confírmalo para entrar; no necesitas aprobación manual. Revisa también spam.</p><Link prefetch={false} className="super-battery-action" href={`/ingresar?next=${encodeURIComponent(next)}`}>Ir a iniciar sesión ↗</Link><button className="super-battery-back" type="button" onClick={() => setSent(false)}>Usar otro correo</button></div>;
+  if (session) return <div className="microhub-auth-form"><p>Ya iniciaste sesión como {session.user.email}.</p><Link prefetch={false} className="super-battery-action" href={next}>Continuar ↗</Link></div>;
+  if (sent) return <div className="microhub-auth-form" role="status"><h2>Revisa tu <em>correo.</em></h2><p>Si el registro puede completarse, recibirás un enlace en <strong>{email}</strong>. Confírmalo para entrar; no necesitas aprobación manual. Revisa también spam.</p><button type="button" className="super-battery-action" onClick={() => changeMode(false)}>Ir a iniciar sesión ↗</button><button className="super-battery-back" type="button" onClick={() => setSent(false)}>Usar otro correo</button></div>;
 
   return <form className="super-battery-login microhub-auth-form" onSubmit={submit} aria-busy={pending}>
     {!configured && <p className="super-battery-error" role="status">El acceso aún no está configurado en este entorno.</p>}
@@ -49,6 +56,6 @@ export function MicrohubAuthForm({ register = false }: { register?: boolean }) {
     {error && <p className="super-battery-error" role="alert">{error}</p>}
     <button className="super-battery-action" type="submit" disabled={pending || !configured}>{pending ? "Un momento…" : register ? "Crear cuenta ↗" : "Iniciar sesión ↗"}</button>
     {!register && <Link prefetch={false} className="microhub-text-link" href="/micro-id/recuperar">Recuperar contraseña</Link>}
-    <p>{register ? "¿Ya tienes cuenta?" : "¿Es tu primera vez?"} <Link prefetch={false} className="microhub-text-link" href={`${register ? "/ingresar" : "/registro"}?next=${encodeURIComponent(next)}`}>{register ? "Inicia sesión" : "Crea tu cuenta"} ↗</Link></p>
+    <p>{register ? "¿Ya tienes cuenta?" : "¿Es tu primera vez?"} <button type="button" className="microhub-text-link microhub-mode-switch" disabled={pending} onClick={() => changeMode(!register)}>{register ? "Inicia sesión" : "Crea tu cuenta"} ↗</button></p>
   </form>;
 }

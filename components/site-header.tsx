@@ -15,7 +15,7 @@ const navigation = [
 export function SiteHeader({ compact = false }: { compact?: boolean }) {
   const pathname = usePathname();
   const { session, loading } = useMicrohubAuth();
-  const links = [...navigation, ...(session ? [] : [{ label: "Iniciar sesión", href: "/ingresar" }, { label: "Crear cuenta", href: "/registro" }])];
+  const links = [...navigation, ...(session ? [] : [{ label: "Ingresar", href: "/ingresar" }])];
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
 
@@ -47,7 +47,7 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
         {/* El acceso cambia con la sesión: evitar precargas que sobrevivan al cambio de cuenta. */}
         {links.map((item) => {
           const active = pathname === item.href || (item.href !== "/" && pathname?.startsWith(`${item.href}/`)) || (item.href === "/microhub" && (pathname === "/evaluaciones" || pathname?.startsWith("/evaluacion/")));
-          return <Link prefetch={false} key={item.href} href={item.href} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>{item.label}</Link>;
+          return <Link prefetch={false} key={item.href} href={item.href} className={item.href === "/ingresar" ? "access-entry-button" : undefined} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>{item.label}</Link>;
         })}
       </nav>
     </header>
