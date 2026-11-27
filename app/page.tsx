@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ProjectCard } from "@/components/project-card";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -17,6 +18,7 @@ export default function Home() {
       <SiteHeader />
       <section className="hero" id="inicio">
         <h1>Mirar lo<br />cotidiano para<br /><em>transformarlo.</em></h1>
+        <figure className="home-hero-art"><Image src="/images/microrealidades-michi.jpg" width={1254} height={1254} sizes="(max-width: 980px) 88vw, 34vw" alt="Cartel de Microrealidades con un gato: ¿Ya hablaste con tu michi sobre qué es Microrealidades?" preload /></figure>
         <p className="hero-copy">Psicología, tecnología y comunalidad para observar, nombrar y transformar las realidades que habitamos.</p>
         <a className="hero-link" href="#proyectos">Explorar lo que hacemos <span aria-hidden="true">↘</span></a>
         <div className="color-path" aria-hidden="true"><span className="path-pink" /><span className="path-blue" /><span className="path-yellow" /></div>

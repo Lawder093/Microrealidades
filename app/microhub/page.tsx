@@ -1,4 +1,5 @@
 import { ModuleCatalog } from "@/components/module-catalog";
+import { MicrohubPreview } from "@/components/microhub-preview";
 import { MicrohubAccount } from "@/components/microhub-access";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -16,6 +17,7 @@ export default function MicrohubPage() {
       <h1 id="microhub-title">Tu espacio en<br /><em>Microhub.</em></h1>
       <p>Evaluaciones, tests y herramientas para acompañar tu práctica, en un mismo lugar.</p>
     </section>
+    <MicrohubPreview />
     <section className="hub-section" aria-labelledby="microhub-tools-title">
       <div className="hub-section-heading"><p className="section-label">Espacio profesional</p><h2 id="microhub-tools-title">Herramientas que <em>acompañan.</em></h2></div>
       <MicrohubAccount />
