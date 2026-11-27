@@ -18,6 +18,7 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
   const links = [...navigation, ...(session ? [] : [{ label: "Ingresar", href: "/ingresar" }])];
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const header = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -27,12 +28,26 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
       setMenuOpen(false);
       menuButton.current?.focus();
     };
+    const closeOutside = (event: Event) => {
+      if (event.target instanceof Node && !header.current?.contains(event.target)) setMenuOpen(false);
+    };
+    const mobile = window.matchMedia("(max-width: 980px)");
+    const closeOnWideScreen = (event: MediaQueryListEvent) => { if (!event.matches) setMenuOpen(false); };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("focusin", closeOutside);
+    mobile.addEventListener("change", closeOnWideScreen);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("focusin", closeOutside);
+      mobile.removeEventListener("change", closeOnWideScreen);
+    };
   }, [menuOpen]);
 
   return (
-    <header className={`site-header${compact ? " page-header" : ""}${menuOpen ? " is-menu-open" : ""}`}>
+    <header ref={header} className={`site-header${compact ? " page-header" : ""}${menuOpen ? " is-menu-open" : ""}`}>
+      <div className="site-header-glass">
       <Link prefetch={false} className="brand" href="/" aria-label="Microrealidades, inicio" onClick={() => setMenuOpen(false)}>
         <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
         <span>MICRO<br />REALIDADES</span>
@@ -50,6 +65,7 @@ export function SiteHeader({ compact = false }: { compact?: boolean }) {
           return <Link prefetch={false} key={item.href} href={item.href} className={item.href === "/ingresar" ? "access-entry-button" : undefined} aria-current={active ? "page" : undefined} onClick={() => setMenuOpen(false)}>{item.label}</Link>;
         })}
       </nav>
+      </div>
     </header>
   );
 }
